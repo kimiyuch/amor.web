@@ -1,0 +1,69 @@
+@import 'tailwindcss' source(none);
+
+/* Only the templates and the script contain classes. */
+@source '../views';
+@source '../js';
+
+@theme {
+    --font-display: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+
+    /* Sky blue: the icon's background. */
+    --color-sky-50: #f3f9fd;
+    --color-sky-100: #e1f2fc;
+    --color-sky-200: #c4e6f8;
+    --color-sky-300: #a9dcf5;
+    --color-sky-400: #6fbbe8;
+    --color-sky-500: #4a9fd8;
+    --color-sky-600: #3a86c4;
+    --color-sky-700: #2f6ca3;
+    --color-sky-800: #285a85;
+    --color-sky-900: #14263a;
+    --color-sky-950: #0d1b2a;
+
+    /* Leaf green: the lovebird. */
+    --color-leaf-50: #f2f9ec;
+    --color-leaf-100: #e4f4d6;
+    --color-leaf-200: #cdeaa9;
+    --color-leaf-300: #b2e06a;
+    --color-leaf-400: #8fcb52;
+    --color-leaf-500: #6fb33f;
+    --color-leaf-600: #56952f;
+    --color-leaf-700: #437427;
+    --color-leaf-800: #2f5a1c;
+    --color-leaf-900: #264a19;
+
+    /* Peach: its face and the calendar band. 600 is the button color (white text stays readable). */
+    --color-peach-50: #fff4ef;
+    --color-peach-100: #ffe7dc;
+    --color-peach-200: #ffd3bf;
+    --color-peach-300: #ffc4a2;
+    --color-peach-400: #ff8c70;
+    --color-peach-500: #ee6650;
+    --color-peach-600: #cc4232;
+    --color-peach-700: #b8392a;
+    --color-peach-800: #9a3412;
+    --color-peach-900: #7a2a10;
+}
+
+@layer base {
+    [hidden] { display: none !important; }
+}
+
+@utility field-input {
+    @apply block w-full rounded-xl bg-sky-50 px-3.5 py-3 text-base text-sky-900 ring-1 ring-sky-900/15 placeholder:text-sky-900/45 focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-sky-500 max-sm:py-2.5 dark:bg-white/5 dark:text-sky-50 dark:ring-white/12 dark:placeholder:text-sky-100/40 dark:focus-visible:outline-sky-300;
+}
+
+@utility text-muted {
+    @apply text-sky-900/70 dark:text-sky-100/65;
+}
+
+/* The lovebird bobs while Claude reads; a scan line passes over. */
+@keyframes bob {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    30% { transform: translateY(-4px) rotate(-6deg); }
+    60% { transform: translateY(-1px) rotate(5deg); }
+}
+@utility animate-bob {
+    animation: bob 1.1s ease-in-out infinite;
+    transform-origin: 50% 90%;
+}

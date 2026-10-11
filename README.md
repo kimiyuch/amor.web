@@ -6,7 +6,7 @@
 
 <p align="center">
   Photograph the duty roster, and every shift goes into your calendar.<br>
-  A lovebird that reads POLYPOINT/PEP rosters for you. 🦜
+  A lovebird that reads POLYPOINT/PEP rosters for you.
 </p>
 
 <p align="center">
@@ -15,100 +15,77 @@
 
 ---
 
-Amor is a phone app (PWA) that reads a photographed duty roster ("Dienstplan") with Claude and turns one person's shifts into calendar events: as an `.ics` file for any calendar app, or written directly to Google Calendar.
+Amor reads one person's row from a photographed duty roster ("Dienstplan") with Claude, lets you check the days, and publishes the shifts as a calendar feed that iPhone, Mac and Google Calendar subscribe to. A corrected roster updates the events, and shifts removed from the plan disappear.
 
-Static files only: no backend, no build step. The spec is in [docs/spec.md](docs/spec.md).
+A Laravel 13 app with Tailwind CSS 4 and SQLite, behind one password. The original spec is in [docs/spec.md](docs/spec.md).
 
 ## Local development
 
-The site runs in [Herd](https://herd.laravel.com) at `https://amor.web.test` (Herd serves `public/`). HTTPS is needed for the service worker and Google sign-in; the certificate comes from `herd secure amor.web`.
-
-- `https://amor.web.test/?mock` runs the whole app against simulated Anthropic and Google APIs, so you need no keys. In mock mode, run `__mock.loadRoster()` in the console to load a synthetic roster photo, then search for "Anna Muster".
-- Without Herd: `npm run serve` serves `public/` at `http://localhost:8000`.
+The site runs in [Herd](https://herd.laravel.com) at `https://amor.web.test`.
 
 ```sh
-npm install          # Playwright, only needed for the end-to-end test
-npm test             # unit tests for the event mapping and .ics export
-npm run e2e          # full flow in a phone-sized Chromium against ?mock (needs npm run serve)
-npm run e2e -- webkit
-BASE_URL=https://amor.web.test/ npm run e2e   # same, against Herd
+composer install
+npm install
+cp .env.example .env && php artisan key:generate
+touch database/database.sqlite && php artisan migrate
+npm run dev           # or: npm run build
+php artisan queue:work --timeout=900   # reads the rosters
 ```
 
-The end-to-end test reads a synthetic roster through a mocked Anthropic SSE stream with one zoom round trip, checks the request (model, effort, structured output, fallbacks, strict tool, append-only history), edits codes and shift times, exports the `.ics` (download in Chromium, share sheet in WebKit), and syncs to a fake Google Calendar, including removing a stale event and re-syncing without duplicates. Screenshots go to `tests/screenshots/`.
+In `.env`:
+
+| | |
+|---|---|
+| `AMOR_PASSWORD` | The password that opens Amor. Changing it signs out every device. Without it, Amor stays closed. |
+| `ANTHROPIC_API_KEY` | Used to read the photos with Claude. |
+| `AMOR_MODEL` | `claude-opus-5-5` by default. |
+| `AMOR_TIMEZONE` | Shift times are wall-clock times in this zone (`Europe/Zurich`). |
+| `AMOR_FAKE_READER` | `true` reads a made-up roster instead of calling Claude (for UI work). |
+| `DB_QUEUE_RETRY_AFTER` | Keep at `1200`: a scan can take minutes, and must not be handed to a second worker. |
+
+## Tests
+
+```sh
+php artisan test      # feature and unit tests, with the fake reader
+npm run e2e           # the whole flow in a phone-sized browser against Herd
+npm run e2e -- webkit
+```
+
+The end-to-end test needs `AMOR_FAKE_READER=true`, `AMOR_PASSWORD=amor` and a running queue worker. It signs in, uploads `tests/fixtures/roster.jpg`, waits for the reading, edits codes, saves, sets shift times and checks the calendar feed. Screenshots go to `tests/screenshots/`.
 
 ## Deploying
 
 ```sh
+npm run build     # if you changed the design; commit public/build
 ./deploy.sh
 ```
 
-`deploy.sh` runs the unit tests, exports the committed `public/` folder (without `mock.js`) and syncs it over SSH to Hostpoint with your own key. GitHub Actions only runs the tests. `public/.htaccess` forces HTTPS, sets the manifest MIME type and makes browsers revalidate the app files, so updates arrive straight away.
+`deploy.sh` runs the tests, exports the committed code, installs production dependencies, syncs it to Hostpoint over SSH with your own key, and migrates the database. The server's `.env`, `database/database.sqlite` and `storage/` are left alone. GitHub Actions only runs the tests.
+
+The server needs, once:
+
+- `.env` in `/home/pumutuxu/www/amor.kimiyu.ch` (from `.env.example`, with `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://amor.kimiyu.ch`, `AMOR_PASSWORD` and `ANTHROPIC_API_KEY`).
+- A cron job that runs the queue worker (rosters are read in the background, because a scan can take longer than a web request may run):
+  ```
+  * * * * * cd /home/pumutuxu/www/amor.kimiyu.ch && /usr/local/php83/bin/php artisan queue:work --max-time=55 --sleep=2 --timeout=900 --tries=1 >> /dev/null 2>&1
+  ```
+
+## How it works
+
+1. You enter the name in the roster and take a photo. The browser converts it to a JPEG of at most 4000 px; the server stores it and queues `App\Jobs\ReadRoster`.
+2. `App\Roster\ClaudeRosterReader` sends Claude a ≈2000 px overview and a `zoom` tool that crops the original photo (`App\Roster\Photo`, Imagick). Claude zooms into the header and the person's row and answers with a JSON schema: period, row label, row box, and a code per day with an "uncertain" flag. The loop is capped at 14 turns; refusals fall back to another model server-side (`fallbacks: "default"`). The waiting page shows the progress.
+3. The photo is deleted once read; only a strip of the person's row is kept, to compare against.
+4. On the review page you correct codes, then save. Shifts in the roster's period are replaced.
+5. `/feed/<secret>.ics` (`App\Calendar\IcsFeed`) publishes all shifts. Codes become events through the shift code table in Settings: with times a timed event (ending the next day if the end is before the start), without times an all-day event, *Skip* no event. Event IDs are stable per date. The feed URL is the only thing protecting it; Settings can create a new one.
 
 ## Where things are
 
 | | |
 |---|---|
-| `public/index.html`, `styles.css` | The UI (mobile-first, light and dark) |
-| `public/app.js` | UI logic and settings (stored in `localStorage`) |
-| `public/extract.js` | Claude: overview image, zoom tool loop, structured result |
-| `public/calendar.js` | Code → event mapping, Google Calendar sync, `.ics` export and delivery |
-| `public/sw.js` | Network-first cache for the app and the SDK; API calls are never cached |
-| `public/mock.js` | Test double used by `?mock` and the end-to-end test; not deployed |
-| `scripts/make-icon.mjs` | Draws the icon (a peach-faced lovebird with a heart-shaped face on a calendar page) and renders every PNG |
-
-### Look
-
-The colors come from the icon and are defined at the top of `public/styles.css`: `sky` for the background, `leaf` for the lovebird and `peach` for its face and the calendar band. Buttons use a deeper peach (`#cc4232`) so white text stays readable. Headings use Figtree (SIL Open Font License, self-hosted in `public/fonts`); body text uses the system font. After changing the icon, run `node scripts/make-icon.mjs`.
-
-### How the extraction works
-
-`extract.js` sends a ≈2000 px overview of the photo plus a client-side `zoom` tool to `claude-opus-5-5` (effort `high`, adaptive thinking, streaming). The tool crops the original full-resolution photo in a canvas (max 2000 px long side, at most 2× upscale) and returns the crop as an image. Claude zooms into the header and the person's row about 7–10 days at a time, and answers with a JSON schema (`output_config.format`): period, row label, row bounding box, and one code per day with an "uncertain" flag. The loop is capped at 14 turns. Refusals fall back to another model server-side (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`). The SDK is loaded from esm.sh, pinned to `@anthropic-ai/sdk@0.133.0` (bundled). When you update it, change the version in `extract.js`, `index.html` and `sw.js`.
-
-A scan costs a few cents (several image requests; the prompt prefix is cached between turns).
-
-Event IDs are `dienst` + FNV-1a hash of the person's name (base32) + `yyyymmdd`. They stay the same per person and date, so a re-import updates events instead of duplicating them.
-
-## Setup for users
-
-### Anthropic API key (required)
-
-1. Sign up or log in at [platform.claude.com](https://platform.claude.com).
-2. **Settings → Billing**: add a payment method or credits.
-3. **Settings → API Keys → Create Key** (e.g. "dienstplan-app") and copy the `sk-ant-…` key. It is only shown once.
-4. In the app: ⚙︎ Settings → *Anthropic API key*.
-5. Optional: set a monthly spend limit under **Settings → Limits**.
-
-The key is stored in the browser and only sent to Anthropic. That's fine for personal use. If the app is shared more widely, move the Claude call behind a small server function that holds the key.
-
-### Other devices
-
-Settings → *Other devices* → **Share setup link** creates a link that carries all settings (API key, name, shift times). Opening it on another computer or phone sets Amor up there; the settings travel in the URL fragment (after `#`), which is never sent to the server, and Amor removes it from the address bar. Amor on the iPhone home screen can't be opened from a link, so paste the link into *Paste a setup link* there. Treat the link like the key itself.
-
-### Shift times
-
-Times aren't on the roster. Enter them once in Settings → *Shift codes*. Codes without times become all-day events; if the end is before the start, the shift ends the next day; *Skip* creates no event. Codes found in a scan that aren't in the table are added automatically.
-
-### Google Calendar (optional)
-
-Only needed for "Add to Google Calendar" (updates and removals, useful on Android). The client ID isn't a secret: it's created once by the app owner, and every user signs in with their own Google account.
-
-1. [console.cloud.google.com](https://console.cloud.google.com) → **New project** (e.g. "Dienstplan").
-2. **APIs & Services → Library** → "Google Calendar API" → **Enable**.
-3. **OAuth consent screen**: External, app name, support email; scope `https://www.googleapis.com/auth/calendar.events`; add every user's Google account as a **test user**. While the app is in "Testing", only those accounts (up to 100) can sign in, and no verification is needed.
-4. **Credentials → Create credentials → OAuth client ID → Web application**. Authorized JavaScript origins: `https://amor.kimiyu.ch` and `https://amor.web.test` (no path, no trailing slash). No redirect URI.
-5. Copy the client ID (`….apps.googleusercontent.com`) → app Settings → *Google OAuth client ID*.
-
-For a separate calendar, create it in Google Calendar (web), then copy ⋮ → *Settings and sharing* → **Calendar ID** into app Settings → *Google calendar ID*. Default: `primary`.
-
-## Importing the .ics
-
-| Where | What happens |
-|---|---|
-| iPhone (Safari and home-screen app) | The app opens the share sheet with the file → Calendar → **Add All** |
-| Android + Samsung Calendar / other apps | Open the downloaded file → import |
-| Android + Google Calendar app | Can't import .ics. Use calendar.google.com → Settings → Import & export, or the Google button |
-| Mac / Outlook | Double-click → import |
-
-The .ics path can't delete shifts that were removed from the plan; the Google sync can (checkbox "Remove previously imported events on days without a shift").
-
-**Still to test on real devices:** .ics import on iPhone (Safari and home-screen mode) and Android, and opening offline on iOS. iOS calendar import can't be simulated in a desktop browser.
+| `app/Roster/` | Reading a roster photo with Claude (and the fake reader for tests) |
+| `app/Calendar/` | Code → event mapping and the iCalendar feed |
+| `app/Jobs/ReadRoster.php` | The background job around the reader |
+| `app/Http/Middleware/RequirePassword.php` | The one-password sign-in (a year-long cookie) |
+| `resources/views/` | Pages: login, home, scans (progress, review), settings |
+| `resources/css/app.css` | Theme colors `sky` (icon background), `leaf` (the lovebird), `peach` (its face; buttons) |
+| `scripts/make-icon.mjs` | Draws the icon (a peach-faced lovebird with a heart-shaped face on a calendar page) and renders every PNG (`npm run icons`) |

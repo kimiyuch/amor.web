@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "style": {
+    "file": "assets/fonts-CjiwerTw.css",
+    "familyStyles": {
+      "figtree": "@font-face {\n  font-family: \"Figtree\";\n  font-style: normal;\n  font-weight: 600;\n  font-display: swap;\n  src: url(\"/build/assets/figtree-600-normal-Cv_xCTDl.woff2\") format(\"woff2\");\n}\n\n.font-figtree {\n  font-family: var(--font-figtree);\n}"
+    },
+    "variables": {
+      "figtree": "--font-figtree: \"Figtree\";"
+    }
+  },
+  "preloads": [
+    {
+      "alias": "figtree",
+      "family": "Figtree",
+      "weight": 600,
+      "style": "normal",
+      "file": "assets/figtree-600-normal-Cv_xCTDl.woff2",
+      "as": "font",
+      "type": "font/woff2",
+      "crossorigin": "anonymous"
+    }
+  ],
+  "families": {
+    "figtree": {
+      "family": "Figtree",
+      "variable": "--font-figtree",
+      "variants": {
+        "600:normal": {
+          "files": [
+            {
+              "file": "assets/figtree-600-normal-Cv_xCTDl.woff2",
+              "format": "woff2"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

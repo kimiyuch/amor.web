@@ -1,0 +1,15 @@
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/build/assets/figtree-600-normal-Cv_xCTDl.woff2") format("woff2");
+}
+
+:root {
+  --font-figtree: "Figtree";
+}
+
+.font-figtree {
+  font-family: var(--font-figtree);
+}

@@ -1,0 +1,25 @@
+{
+  "_figtree-600-normal-Cv_xCTDl.woff2": {
+    "file": "assets/figtree-600-normal-Cv_xCTDl.woff2",
+    "src": "_figtree-600-normal-Cv_xCTDl.woff2"
+  },
+  "_fonts-CjiwerTw.css": {
+    "file": "assets/fonts-CjiwerTw.css",
+    "src": "_fonts-CjiwerTw.css"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-CM01t_H2.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-BkyBV3qM.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

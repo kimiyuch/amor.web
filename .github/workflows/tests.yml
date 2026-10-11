@@ -12,18 +12,25 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v5
+      - uses: shivammathur/setup-php@v2
         with:
-          node-version: '22'
+          php-version: '8.3'
+          extensions: imagick, pdo_sqlite
+          tools: composer:v2
+          coverage: none
 
-      - name: Unit tests
-        run: npm test
-
-      - name: Install Playwright
-        run: npm ci && npx playwright install --with-deps chromium
-
-      - name: End-to-end test (mocked APIs)
+      - name: Check that the built assets are committed
         run: |
-          npm run serve > /dev/null 2>&1 &
-          for i in $(seq 1 30); do curl -sf http://localhost:8000/ > /dev/null && break; sleep 1; done
-          npm run e2e
+          test -f public/build/manifest.json || {
+            echo "::error::public/build is missing. Run 'npm run build' locally and commit the result."
+            exit 1
+          }
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run tests
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test
