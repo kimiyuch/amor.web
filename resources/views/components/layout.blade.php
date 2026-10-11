@@ -22,12 +22,19 @@
     <div class="isolate flex min-h-dvh flex-col">
         @if ($header)
             <header class="pt-[env(safe-area-inset-top)]">
-                <div class="mx-auto flex max-w-xl items-center gap-2 py-1 pr-1 pl-4">
-                    <a href="{{ route('home') }}" aria-label="Startseite" class="mr-auto font-display text-xl font-semibold tracking-tight">Amor</a>
-                    @if ($addButton)
-                        <x-button :href="route('scans.create')" size="sm" icon="camera">Dienstplan hinzufügen</x-button>
-                    @endif
-                    <a href="{{ route('settings') }}" aria-label="Einstellungen" class="relative grid size-12 place-items-center rounded-full text-sky-900/60 hover:bg-sky-100 hover:text-sky-900 focus-visible:outline-2 focus-visible:outline-sky-500 dark:text-sky-100/60 dark:hover:bg-white/10 dark:hover:text-sky-50">
+                {{-- Three columns, so the button sits in the middle whatever the sides measure. --}}
+                <div class="mx-auto grid max-w-xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-1 py-1">
+                    <a href="{{ route('home') }}" aria-label="Startseite" class="justify-self-start pl-3 font-display text-xl font-semibold tracking-tight">Amor</a>
+                    <div>
+                        @if ($addButton)
+                            <x-button :href="route('scans.create')" variant="secondary" size="sm" icon="camera" aria-label="Dienstplan hinzufügen" class="whitespace-nowrap">
+                                {{-- The smallest phones get a shorter label, so it stays on one line. --}}
+                                <span class="max-[359px]:hidden">Dienstplan hinzufügen</span>
+                                <span class="min-[360px]:hidden">Plan hinzufügen</span>
+                            </x-button>
+                        @endif
+                    </div>
+                    <a href="{{ route('settings') }}" aria-label="Einstellungen" class="relative grid size-12 place-items-center justify-self-end rounded-full text-sky-900/60 hover:bg-sky-100 hover:text-sky-900 focus-visible:outline-2 focus-visible:outline-sky-500 dark:text-sky-100/60 dark:hover:bg-white/10 dark:hover:text-sky-50">
                         <x-heroicon-m-cog-6-tooth class="size-5 shrink-0" />
                     </a>
                 </div>
