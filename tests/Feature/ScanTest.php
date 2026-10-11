@@ -110,14 +110,14 @@ class ScanTest extends TestCase
 
         $this->signedIn()->get('/')
             ->assertSee('December 2026')
-            ->assertSee('href="#day-2026-12-02"', false)
-            ->assertSee('Frühdienst')
-            ->assertSee('06:45 – 15:15')
-            ->assertSee('Not in the calendar')          // B is skipped
-            ->assertDontSee('#day-2027-02-10', false)  // February
+            ->assertSee('Wednesday 2 December, Frühdienst, 06:45 – 15:15')   // for screen readers
+            ->assertSee('Saturday 5 December, B')                             // skipped
+            ->assertDontSee('February 2027')
             ->assertSee('?month=2027-01', false)
-            ->assertSee('Read a new roster')
-            ->assertDontSee('Every shift, straight into your calendar');
+            ->assertSee('Add a roster')
+            ->assertSee(route('scans.create'), false)
+            ->assertDontSee('Every shift, straight into your calendar')
+            ->assertDontSee('Roster photo', false);
 
         $this->signedIn()->get('/?month=2027-01')
             ->assertSee('January 2027')
@@ -132,6 +132,17 @@ class ScanTest extends TestCase
     {
         $this->signedIn()->get('/')
             ->assertSee('Every shift, straight into your calendar')
-            ->assertDontSee('Read a new roster');
+            ->assertSee('Add your first roster');
+    }
+
+    public function test_the_add_a_roster_page(): void
+    {
+        Setting::put('person', 'Anna Muster');
+        $this->signedIn()->get('/scans/new')
+            ->assertOk()
+            ->assertSee('Add a roster')
+            ->assertSee('value="Anna Muster"', false)
+            ->assertSee('For a photo Amor reads well')
+            ->assertSee('Read shifts');
     }
 }

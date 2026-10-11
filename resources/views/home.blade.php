@@ -37,21 +37,23 @@
         @if ($calendar)
             @include('month-calendar', $calendar)
 
-            <section id="new-roster" class="mt-4 grid scroll-mt-16 gap-4 border-t border-sky-900/10 pt-6 dark:border-white/8" aria-labelledby="new-roster-heading">
-                <div class="grid gap-1">
-                    <h2 id="new-roster-heading" class="font-display text-lg font-semibold">Read a new roster</h2>
-                    <p class="text-muted text-pretty">Photograph the duty roster. Amor finds your row and reads each day.</p>
-                </div>
-                @include('scan-form')
-            </section>
+            <div class="grid gap-3">
+                <x-button :href="route('scans.create')" icon="camera">Add a roster</x-button>
+                <p class="text-muted text-center text-pretty">
+                    @if ($googleCalendar)
+                        Saved shifts also go into your “{{ $googleCalendar }}” calendar on Google.
+                    @else
+                        Got a new roster? Photograph it, check the days, and they're in.
+                    @endif
+                </p>
+            </div>
         @else
-            <div class="grid justify-items-center gap-1 text-center sm:gap-2">
+            <div class="grid justify-items-center gap-1 pt-4 text-center sm:gap-2">
                 <img src="/icons/mascot.svg" alt="" width="140" height="143" class="mb-1 max-sm:w-[5.75rem]">
                 <h1 class="max-w-[20ch] font-display text-[1.375rem] font-semibold tracking-tight text-balance sm:text-[1.625rem]">Every shift, straight into your calendar</h1>
-                <p class="text-muted max-w-[36ch] text-pretty">Photograph the duty roster. Amor finds your row and reads each day.</p>
+                <p class="text-muted max-w-[38ch] text-pretty">Photograph the duty roster. Amor finds your row, reads each day and keeps your calendar up to date, also when a roster changes.</p>
             </div>
-
-            @include('scan-form')
+            <x-button :href="route('scans.create')" icon="camera">Add your first roster</x-button>
         @endif
     </div>
 </x-layout>

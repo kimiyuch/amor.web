@@ -20,6 +20,7 @@ Route::get('/google/callback', [GoogleController::class, 'callback'])->name('goo
 Route::middleware('password')->group(function () {
     Route::get('/', HomeController::class)->name('home');
 
+    Route::get('/scans/new', [ScanController::class, 'create'])->name('scans.create');
     Route::post('/scans', [ScanController::class, 'store'])->name('scans.store');
     Route::get('/scans/{scan}', [ScanController::class, 'show'])->name('scans.show');
     Route::get('/scans/{scan}/status', [ScanController::class, 'status'])->name('scans.status');

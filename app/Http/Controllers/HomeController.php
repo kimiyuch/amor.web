@@ -26,6 +26,7 @@ class HomeController extends Controller
             'savedScan' => Scan::find(session('saved_scan')),
             'googleError' => session('google_error'),
             'google' => GoogleCalendar::connected(),
+            'googleCalendar' => GoogleCalendar::connected() ? GoogleCalendar::calendarName() : null,
         ]);
     }
 
@@ -59,8 +60,8 @@ class HomeController extends Controller
             ];
         });
 
-        $inMonth = $days->where('inMonth', true);
-        $next = $inMonth->whereIn('kind', ['timed', 'allday'])->isEmpty()
+        $empty = $days->where('inMonth', true)->whereIn('kind', ['timed', 'allday'])->isEmpty();
+        $next = $empty
             ? Shift::where('date', '>', $month->copy()->endOfMonth()->toDateString())->orderBy('date')->value('date')
             : null;
 
@@ -68,7 +69,7 @@ class HomeController extends Controller
             'month' => $month,
             'title' => $month->locale('en')->isoFormat('MMMM YYYY'),
             'weeks' => $days->chunk(7),
-            'agenda' => $inMonth->whereIn('kind', ['timed', 'allday', 'skipped'])->values(),
+            'empty' => $empty,
             'previous' => $month->copy()->subMonth()->format('Y-m'),
             'next' => $month->copy()->addMonth()->format('Y-m'),
             'isCurrent' => $month->isSameMonth(today()),

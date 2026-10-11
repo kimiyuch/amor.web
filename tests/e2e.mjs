@@ -29,6 +29,7 @@ await page.getByText("That password isn't right.").waitFor();
 await page.getByLabel('Password').fill(PASSWORD);
 await page.screenshot({ path: shots + '1-login.png' });
 await page.getByRole('button', { name: 'Open Amor' }).click();
+await page.getByRole('link', { name: 'Add your first roster' }).click();
 await page.getByRole('button', { name: 'Read shifts' }).waitFor();
 
 // Scan
@@ -89,9 +90,8 @@ assert.match(icsResponse.headers()['content-type'], /^text\/calendar/);
 assert.ok((await icsResponse.text()).split('BEGIN:VEVENT').length > 10, 'the file has the saved shifts');
 // The month with the saved shifts
 await page.locator('#month-heading').waitFor();
-assert.ok((await page.locator('table a[href^="#day-"]').count()) >= 20, 'days with shifts link to their entry');
-await page.locator('table a[href^="#day-"]').first().click();
-assert.match(page.url(), /#day-\d{4}-\d{2}-\d{2}$/);
+assert.ok((await page.locator('table .font-bold').count()) >= 20, 'the days show their codes');
+await page.getByRole('link', { name: 'Add a roster' }).waitFor();
 await page.getByRole('link', { name: 'Next month' }).click();
 await page.getByRole('link', { name: 'Today' }).click();
 await page.locator('#month-heading').waitFor();

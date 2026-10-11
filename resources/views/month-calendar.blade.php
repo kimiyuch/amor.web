@@ -1,4 +1,4 @@
-{{-- A month of shifts: a grid from Monday to Sunday, then the month's shifts with their times. --}}
+{{-- A month of shifts: a grid from Monday to Sunday with each day's code. --}}
 @php
     $chip = [
         'timed' => 'bg-leaf-100 text-leaf-800 dark:bg-leaf-300/16 dark:text-leaf-200',
@@ -37,21 +37,12 @@
                 <tr>
                     @foreach ($week as $day)
                         @php
-                            $hasShift = in_array($day['kind'], ['timed', 'allday', 'skipped'], true);
                             $label = \Illuminate\Support\Carbon::parse($day['date'])->locale('en')->isoFormat('dddd D MMMM')
                                 .($day['event'] ? ', '.$day['event']->title.', '.$day['event']->when() : ($day['kind'] === 'skipped' ? ', '.$day['code'] : ', free'));
                         @endphp
                         <td class="p-0.5 align-top">
-                            @php
-                                $link = $hasShift && $day['inMonth'];
-                                $cell = 'flex h-[4.25rem] flex-col items-center gap-1 rounded-xl pt-1.5 '.($day['inMonth'] ? '' : 'opacity-40 ')
-                                    .($link ? 'hover:bg-sky-50 focus-visible:outline-2 focus-visible:outline-sky-500 dark:hover:bg-white/5' : '');
-                            @endphp
-                            @if ($link)
-                                <a href="#day-{{ $day['date'] }}" aria-label="{{ $label }}" class="{{ $cell }}">
-                            @else
-                                <div aria-label="{{ $label }}" class="{{ $cell }}">
-                            @endif
+                            <div class="flex h-[4.25rem] flex-col items-center gap-1 pt-1.5 {{ $day['inMonth'] ? '' : 'opacity-40' }}">
+                                <span class="sr-only">{{ $label }}</span>
                                 <span class="grid size-7 place-items-center rounded-full text-[0.9375rem] tabular-nums {{ $day['today'] ? 'bg-sky-600 font-semibold text-white dark:bg-sky-300 dark:text-sky-950' : ($day['weekend'] ? 'text-muted' : '') }}">{{ $day['day'] }}</span>
                                 @if (isset($chip[$day['kind']]) && str_contains($day['code'], '/'))
                                     {{-- Stacked codes ("S1/BD") as on the printed roster. --}}
@@ -65,7 +56,7 @@
                                 @elseif ($day['kind'] === 'skipped')
                                     <span class="text-muted max-w-full truncate text-sm/5">{{ $day['code'] }}</span>
                                 @endif
-                            {!! $link ? '</a>' : '</div>' !!}
+                            </div>
                         </td>
                     @endforeach
                 </tr>
@@ -73,34 +64,11 @@
         </tbody>
     </table>
 
-    @if ($agenda->isNotEmpty())
-        <ul role="list" class="mt-2 divide-y divide-sky-900/10 border-t border-sky-900/10 dark:divide-white/8 dark:border-white/8">
-            @foreach ($agenda as $day)
-                @php $date = \Illuminate\Support\Carbon::parse($day['date']); @endphp
-                <li id="day-{{ $day['date'] }}" class="-mx-2 flex scroll-mt-20 items-center gap-3 rounded-lg px-2 py-2.5 target:bg-sky-50 dark:target:bg-white/5">
-                    <span class="w-20 shrink-0 tabular-nums">
-                        <span class="inline-block w-[1.9em] font-semibold {{ $day['today'] ? 'text-sky-600 dark:text-sky-300' : '' }}">{{ $day['weekday'] }}</span>
-                        <span class="{{ $day['today'] ? 'font-semibold text-sky-600 dark:text-sky-300' : 'text-muted' }}">{{ $date->format('d.m.') }}</span>
-                    </span>
-                    <span class="min-w-0 flex-1">
-                        @if ($day['event']?->named)
-                            <span class="block font-semibold">{{ $day['event']->title }}</span>
-                            <span class="text-muted block tabular-nums">{{ $day['event']->when() }}</span>
-                        @elseif ($day['event'])
-                            <span class="block font-semibold tabular-nums">{{ $day['event']->when() }}</span>
-                        @else
-                            <span class="text-muted block">Not in the calendar</span>
-                        @endif
-                    </span>
-                    <span class="shrink-0 rounded-md px-1.5 py-px text-sm/5 font-bold {{ $chip[$day['kind']] ?? 'text-muted' }}">{{ $day['code'] }}</span>
-                </li>
-            @endforeach
-        </ul>
-    @else
+    @if ($empty)
         <p class="text-muted text-pretty">
             No shifts in {{ $month->locale('en')->isoFormat('MMMM') }}.
             @if ($nextShift)
-                <a href="{{ route('home', ['month' => $nextShift->format('Y-m')]) }}#day-{{ $nextShift->toDateString() }}" class="font-semibold text-sky-700 underline decoration-sky-700/30 underline-offset-3 dark:text-sky-300 dark:decoration-sky-300/30">Next shift: {{ $nextShift->locale('en')->isoFormat('dd DD.MM.') }}</a>
+                <a href="{{ route('home', ['month' => $nextShift->format('Y-m')]) }}" class="font-semibold text-sky-700 underline decoration-sky-700/30 underline-offset-3 dark:text-sky-300 dark:decoration-sky-300/30">Next shift: {{ $nextShift->locale('en')->isoFormat('dd DD.MM.') }}</a>
             @endif
         </p>
     @endif

@@ -18,6 +18,11 @@ use Illuminate\Support\Str;
 
 class ScanController extends Controller
 {
+    public function create()
+    {
+        return view('scans.create', ['person' => Setting::person()]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
