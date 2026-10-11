@@ -56,15 +56,17 @@ final class ShiftCalendar
         if ($entry?->skip) {
             return null;
         }
-        $title = trim((string) $entry?->title) ?: "Dienst {$code}";
+        // Without a title of its own, the event is simply called by its code ("1", "S1/BD").
+        $named = trim((string) $entry?->title) !== '';
+        $title = $named ? trim($entry->title) : ShiftCode::normalize($code);
 
         if ($entry?->start && $entry?->end) {
             $endDate = $entry->end <= $entry->start ? self::addDays($date, 1) : $date;
 
-            return new ShiftEvent($date, $code, $title, false, "{$date}T{$entry->start}", "{$endDate}T{$entry->end}");
+            return new ShiftEvent($date, $code, $title, false, "{$date}T{$entry->start}", "{$endDate}T{$entry->end}", $named);
         }
 
-        return new ShiftEvent($date, $code, $title, true, $date, self::addDays($date, 1));
+        return new ShiftEvent($date, $code, $title, true, $date, self::addDays($date, 1), $named);
     }
 
     /**

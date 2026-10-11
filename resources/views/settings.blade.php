@@ -80,7 +80,7 @@
 
         <section class="grid gap-3 border-t border-sky-900/10 py-6 dark:border-white/8">
             <h2 class="font-display text-[1.0625rem] font-semibold">Shift codes</h2>
-            <p class="text-muted text-pretty">Codes without times become all-day events. If the end is before the start, the shift ends the next day. Without a title, the event is called “Dienst” and the code.</p>
+            <p class="text-muted text-pretty">Codes without times become all-day events. If the end is before the start, the shift ends the next day. Without a title, the event is called by its code.</p>
 
             <div role="list" class="border-b border-sky-900/10 dark:border-white/8" data-codes>
                 @foreach ($codes as $i => $code)

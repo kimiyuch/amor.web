@@ -76,8 +76,8 @@
                                         data-code-input>
                                 </td>
                                 <td class="py-2 pr-4 pl-2.5 leading-snug sm:py-2.5" data-event>
-                                    <div class="font-semibold group-data-[kind=free]:font-normal group-data-[kind=free]:text-sky-900/70 group-data-[kind=skipped]:font-normal group-data-[kind=skipped]:text-sky-900/70 dark:group-data-[kind=free]:text-sky-100/65 dark:group-data-[kind=skipped]:text-sky-100/65" data-event-title>{{ match ($day['kind']) { 'free' => 'Free', 'skipped' => 'Not added', default => $day['event']->title } }}</div>
-                                    <div class="text-muted tabular-nums" data-event-when>{{ $day['event']?->when() }}</div>
+                                    <div class="font-semibold group-data-[kind=free]:font-normal group-data-[kind=free]:text-sky-900/70 group-data-[kind=skipped]:font-normal group-data-[kind=skipped]:text-sky-900/70 dark:group-data-[kind=free]:text-sky-100/65 dark:group-data-[kind=skipped]:text-sky-100/65" data-event-title>{{ match ($day['kind']) { 'free' => 'Free', 'skipped' => 'Not added', default => $day['event']->named ? $day['event']->title : $day['event']->when() } }}</div>
+                                    <div class="text-muted tabular-nums" data-event-when>{{ $day['event']?->named ? $day['event']->when() : '' }}</div>
                                     <div class="flex items-center gap-1 text-peach-800 group-not-data-uncertain:hidden dark:text-peach-300">
                                         <x-heroicon-s-exclamation-triangle class="size-4 shrink-0" />
                                         Check on the photo

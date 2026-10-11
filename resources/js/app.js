@@ -108,12 +108,12 @@ if (days) {
         if (!code) return { kind: 'free', title: 'Free', when: '' };
         const entry = find(code);
         if (entry?.skip) return { kind: 'skipped', title: 'Not added', when: '' };
-        const title = entry?.title?.trim() || `Dienst ${code}`;
-        if (entry?.start && entry?.end) {
-            const nextDay = entry.end <= entry.start ? ' next day' : '';
-            return { kind: 'timed', title, when: `${entry.start} – ${entry.end}${nextDay}` };
-        }
-        return { kind: 'allday', title, when: 'All day' };
+        // Lead with the time; the title only when the code has one of its own.
+        const title = entry?.title?.trim();
+        const timed = Boolean(entry?.start && entry?.end);
+        const when = timed ? `${entry.start} – ${entry.end}${entry.end <= entry.start ? ' next day' : ''}` : 'All day';
+        const kind = timed ? 'timed' : 'allday';
+        return title ? { kind, title, when } : { kind, title: when, when: '' };
     };
 
     const summary = document.querySelector('[data-summary]');

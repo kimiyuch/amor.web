@@ -42,8 +42,8 @@ class FeedTest extends TestCase
 
     public function test_event_ids_stay_the_same_per_date(): void
     {
-        $a = new ShiftEvent('2026-12-01', '1', 'Dienst 1', true, '2026-12-01', '2026-12-02');
-        $b = new ShiftEvent('2026-12-01', 'HO', 'Dienst HO', true, '2026-12-01', '2026-12-02');
+        $a = new ShiftEvent('2026-12-01', '1', '1', true, '2026-12-01', '2026-12-02');
+        $b = new ShiftEvent('2026-12-01', 'HO', 'HO', true, '2026-12-01', '2026-12-02');
         $this->assertSame($a->uid(), $b->uid());
     }
 }

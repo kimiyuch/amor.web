@@ -36,13 +36,15 @@ class CalendarTest extends TestCase
 
         $night = $calendar->eventFor('2026-12-31', 's1/bd');
         $this->assertSame('2027-01-01T07:30', $night->end);
-        $this->assertSame('Dienst s1/bd', $night->title);
+        $this->assertSame('S1/BD', $night->title, 'without a title of its own, the event is called by its code');
+        $this->assertFalse($night->named);
+        $this->assertTrue($timed->named);
         $this->assertSame('20:00 – 07:30 next day', $night->when());
 
         $allDay = $calendar->eventFor('2026-12-02', 'HO');
         $this->assertSame([true, '2026-12-02', '2026-12-03', 'All day'], [$allDay->allDay, $allDay->start, $allDay->end, $allDay->when()]);
 
-        $this->assertSame('Dienst X7', $calendar->eventFor('2026-12-03', 'X7')->title);
+        $this->assertSame('X7', $calendar->eventFor('2026-12-03', 'x7')->title);
         $this->assertNull($calendar->eventFor('2026-12-04', 'B'));
         $this->assertNull($calendar->eventFor('2026-12-04', ' '));
 

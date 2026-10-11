@@ -12,6 +12,7 @@ final readonly class ShiftEvent
         public bool $allDay,
         public string $start,  // YYYY-MM-DD, or YYYY-MM-DDTHH:MM
         public string $end,    // exclusive end date for all-day events
+        public bool $named = false, // true when the title comes from the code table, not the code
     ) {}
 
     /** Stable per date, so a corrected roster updates events instead of adding new ones. */

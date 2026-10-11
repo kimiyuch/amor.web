@@ -7,28 +7,72 @@ use App\Calendar\ShiftCalendar;
 use App\Models\Scan;
 use App\Models\Setting;
 use App\Models\Shift;
+use Carbon\CarbonPeriod;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class HomeController extends Controller
 {
-    public function __invoke()
+    public function __invoke(Request $request)
     {
-        $calendar = ShiftCalendar::fromDatabase();
-        $upcoming = Shift::where('date', '>=', today())->orderBy('date')->limit(10)->get()
-            ->map(fn (Shift $shift) => $calendar->eventFor($shift->date->toDateString(), $shift->code))
-            ->filter()
-            ->values();
-
         // The latest roster, if it is still being read or was read but not saved yet.
         $latest = Scan::latest('id')->first();
 
         return view('home', [
             'person' => Setting::person(),
-            'upcoming' => $upcoming,
+            'calendar' => Shift::exists() ? $this->month($request->query('month')) : null,
+            'openScan' => in_array($latest?->status, ['queued', 'reading', 'read'], true) ? $latest : null,
             // Right after saving: offer the roster's shifts as a file to add to a calendar.
             'savedScan' => Scan::find(session('saved_scan')),
             'googleError' => session('google_error'),
             'google' => GoogleCalendar::connected(),
-            'openScan' => in_array($latest?->status, ['queued', 'reading', 'read'], true) ? $latest : null,
         ]);
+    }
+
+    /** A month as weeks from Monday to Sunday, with each day's shift. */
+    private function month(mixed $value): array
+    {
+        $month = is_string($value) && preg_match('/^\d{4}-\d{2}$/', $value)
+            ? Carbon::createFromFormat('!Y-m', $value)
+            : today()->startOfMonth();
+        $start = $month->copy()->startOfWeek(Carbon::MONDAY);
+        $end = $month->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
+
+        $calendar = ShiftCalendar::fromDatabase();
+        $codes = Shift::whereBetween('date', [$start->toDateString(), $end->toDateString()])->get()
+            ->mapWithKeys(fn (Shift $shift) => [$shift->date->toDateString() => $shift->code]);
+
+        $days = collect(CarbonPeriod::create($start, $end))->map(function (Carbon $day) use ($month, $codes, $calendar) {
+            $date = $day->toDateString();
+            $code = $codes[$date] ?? '';
+
+            return [
+                'date' => $date,
+                'day' => $day->day,
+                'weekday' => $day->locale('en')->isoFormat('dd'),
+                'inMonth' => $day->month === $month->month,
+                'today' => $day->isToday(),
+                'weekend' => $day->isWeekend(),
+                'code' => $code,
+                'kind' => $calendar->kind($code),
+                'event' => $calendar->eventFor($date, $code),
+            ];
+        });
+
+        $inMonth = $days->where('inMonth', true);
+        $next = $inMonth->whereIn('kind', ['timed', 'allday'])->isEmpty()
+            ? Shift::where('date', '>', $month->copy()->endOfMonth()->toDateString())->orderBy('date')->value('date')
+            : null;
+
+        return [
+            'month' => $month,
+            'title' => $month->locale('en')->isoFormat('MMMM YYYY'),
+            'weeks' => $days->chunk(7),
+            'agenda' => $inMonth->whereIn('kind', ['timed', 'allday', 'skipped'])->values(),
+            'previous' => $month->copy()->subMonth()->format('Y-m'),
+            'next' => $month->copy()->addMonth()->format('Y-m'),
+            'isCurrent' => $month->isSameMonth(today()),
+            'nextShift' => $next ? Carbon::parse($next) : null,
+        ];
     }
 }

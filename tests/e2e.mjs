@@ -66,7 +66,7 @@ await page.screenshot({ path: shots + '4-review-full.png', fullPage: true });
 const third = rows.nth(2);
 await third.locator('input').fill('HO');
 assert.equal(await third.getAttribute('data-kind'), 'allday');
-assert.equal(await third.locator('[data-event-title]').textContent(), 'Dienst HO');
+assert.equal(await third.locator('[data-event-title]').textContent(), 'All day');
 await rows.nth(4).locator('input').fill('M1');
 assert.match(await page.locator('[data-summary]').textContent(), /^\d+ shifts$/, 'checked cell no longer counts');
 
@@ -87,7 +87,14 @@ const icsHref = await page.getByRole('link', { name: 'Add to calendar' }).getAtt
 const icsResponse = await context.request.get(icsHref);
 assert.match(icsResponse.headers()['content-type'], /^text\/calendar/);
 assert.ok((await icsResponse.text()).split('BEGIN:VEVENT').length > 10, 'the file has the saved shifts');
-await page.getByRole('heading', { name: 'Coming up' }).waitFor();
+// The month with the saved shifts
+await page.locator('#month-heading').waitFor();
+assert.ok((await page.locator('table a[href^="#day-"]').count()) >= 20, 'days with shifts link to their entry');
+await page.locator('table a[href^="#day-"]').first().click();
+assert.match(page.url(), /#day-\d{4}-\d{2}-\d{2}$/);
+await page.getByRole('link', { name: 'Next month' }).click();
+await page.getByRole('link', { name: 'Today' }).click();
+await page.locator('#month-heading').waitFor();
 await page.screenshot({ path: shots + '5-home.png', fullPage: true });
 
 // Settings: shift times, then the feed has timed events

@@ -100,15 +100,38 @@ class ScanTest extends TestCase
         $this->assertFalse(Shift::whereDate('date', '2026-12-01')->exists());
     }
 
-    public function test_the_home_page_lists_upcoming_shifts(): void
+    public function test_the_home_page_shows_the_month_with_its_shifts(): void
     {
-        ShiftCode::where('code', '1')->update(['start' => '06:45', 'end' => '15:15']);
+        ShiftCode::where('code', '1')->update(['start' => '06:45', 'end' => '15:15', 'title' => 'Frühdienst']);
+        ShiftCode::where('code', 'B')->update(['skip' => true]);
         Shift::create(['date' => '2026-12-02', 'code' => '1']);
-        Shift::create(['date' => '2026-11-20', 'code' => 'HO']);
+        Shift::create(['date' => '2026-12-05', 'code' => 'B']);
+        Shift::create(['date' => '2027-02-10', 'code' => 'HO']);
 
         $this->signedIn()->get('/')
-            ->assertSee('Coming up')
+            ->assertSee('December 2026')
+            ->assertSee('href="#day-2026-12-02"', false)
+            ->assertSee('Frühdienst')
             ->assertSee('06:45 – 15:15')
-            ->assertDontSee('Dienst HO');
+            ->assertSee('Not in the calendar')          // B is skipped
+            ->assertDontSee('#day-2027-02-10', false)  // February
+            ->assertSee('?month=2027-01', false)
+            ->assertSee('Read a new roster')
+            ->assertDontSee('Every shift, straight into your calendar');
+
+        $this->signedIn()->get('/?month=2027-01')
+            ->assertSee('January 2027')
+            ->assertSee('No shifts in January.')
+            ->assertSee('Next shift: We 10.02.')
+            ->assertSee('Today');
+
+        $this->signedIn()->get('/?month=nonsense')->assertSee('December 2026');
+    }
+
+    public function test_without_shifts_the_home_page_introduces_amor(): void
+    {
+        $this->signedIn()->get('/')
+            ->assertSee('Every shift, straight into your calendar')
+            ->assertDontSee('Read a new roster');
     }
 }

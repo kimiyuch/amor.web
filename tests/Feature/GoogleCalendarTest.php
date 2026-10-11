@@ -152,7 +152,7 @@ class GoogleCalendarTest extends TestCase
         $this->signedIn()->post("/scans/{$scan->id}/save", ['codes' => $codes]);
         $this->assertCount(24, $this->google);
         $this->assertArrayNotHasKey('anna@gmail.com/amor20261201', $this->google);
-        $this->assertSame('Dienst HO', $this->google['anna@gmail.com/amor20261202']['summary']);
+        $this->assertSame('HO', $this->google['anna@gmail.com/amor20261202']['summary']);
 
         $this->signedIn()->withSession(['saved_scan' => $scan->id])->get('/')->assertDontSee('Add them to your calendar');
     }
@@ -176,7 +176,7 @@ class GoogleCalendarTest extends TestCase
 
         $this->savedScan();
 
-        $this->assertSame('Dienst 1', $this->google['anna@gmail.com/amor20261201']['summary']);
+        $this->assertSame('1', $this->google['anna@gmail.com/amor20261201']['summary']);
     }
 
     public function test_a_google_error_keeps_the_shifts_and_offers_a_retry(): void
