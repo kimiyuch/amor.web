@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 HOST=pumutuxu@pumutuxu.myhostpoint.ch
-DEST=/home/pumutuxu/www/amor.kimiyu.ch
+DEST=/home/pumutuxu/www/amor.kimiyu.ch/public  # the web root set up in the Hostpoint panel
 
 if [[ -n $(git status --porcelain) ]]; then
   echo "You have uncommitted changes. Commit them first; only committed code is deployed."
