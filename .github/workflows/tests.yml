@@ -1,0 +1,29 @@
+name: Tests
+
+# Runs the tests on every push and pull request. Deploying happens from your Mac with ./deploy.sh.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Install Playwright
+        run: npm ci && npx playwright install --with-deps chromium
+
+      - name: End-to-end test (mocked APIs)
+        run: |
+          npm run serve > /dev/null 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/ > /dev/null && break; sleep 1; done
+          npm run e2e

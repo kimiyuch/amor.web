@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dienstplan</title>
+  <meta name="description" content="Turns a photo of a duty roster into calendar events.">
+  <meta name="theme-color" content="#0f766e" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1416" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Dienstplan">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="modulepreload" href="https://esm.sh/@anthropic-ai/sdk@0.133.0?bundle">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <h1>Dienstplan</h1>
+    <button id="open-settings" class="icon-button" type="button" aria-label="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section id="scan" class="card">
+      <p id="setup-hint" class="hint" hidden>Add your Anthropic API key in <button type="button" class="link" data-open-settings>Settings</button> first.</p>
+
+      <label class="field">
+        <span>Name in the roster</span>
+        <input id="person" type="text" autocomplete="name" autocapitalize="words" placeholder="e.g. Muster Anna" required>
+      </label>
+
+      <label class="photo-button button secondary">
+        <input id="photo" type="file" accept="image/*" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        <span id="photo-label">Take or choose photo</span>
+      </label>
+
+      <img id="preview" class="preview" alt="Roster photo" hidden>
+
+      <button id="read" class="button primary" type="button" disabled>Read shifts</button>
+
+      <div id="status" class="status" role="status" aria-live="polite" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="status-text"></span>
+        <button id="cancel" type="button" class="link">Cancel</button>
+      </div>
+      <p id="error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="result" class="card" hidden>
+      <h2 id="result-title"></h2>
+      <p id="result-period" class="muted"></p>
+      <p id="result-notes" class="notes" hidden></p>
+
+      <figure class="strip-wrap" id="strip-wrap" hidden>
+        <div class="strip" id="strip"><img id="strip-img" alt="Detected row"></div>
+        <figcaption class="muted">Detected row – scroll sideways to compare.</figcaption>
+      </figure>
+
+      <div class="table-wrap">
+        <table class="days">
+          <thead><tr><th>Date</th><th>Code</th><th>Event</th></tr></thead>
+          <tbody id="days"></tbody>
+        </table>
+      </div>
+      <p id="uncertain-hint" class="muted" hidden><span class="swatch"></span> Unsure – please check.</p>
+
+      <div class="actions">
+        <button id="ics" class="button primary" type="button">Add to calendar (.ics)</button>
+        <p id="android-hint" class="hint" hidden>The Google Calendar app can't import .ics files. Open the file with Samsung Calendar or another calendar app, import it at calendar.google.com → Settings → Import &amp; export, or use the Google button below.</p>
+
+        <div id="google" class="google" hidden>
+          <button id="google-sync" class="button secondary" type="button">Add to Google Calendar</button>
+          <label class="check">
+            <input id="remove-empty" type="checkbox" checked>
+            <span>Remove previously imported events on days without a shift</span>
+          </label>
+        </div>
+        <p id="sync-status" class="status-line" role="status" aria-live="polite" hidden></p>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="settings">
+    <form method="dialog" id="settings-form">
+      <header class="dialog-bar">
+        <h2>Settings</h2>
+        <button class="button primary small" value="save">Done</button>
+      </header>
+
+      <fieldset>
+        <legend>Claude</legend>
+        <label class="field">
+          <span>Anthropic API key</span>
+          <input name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+        </label>
+        <label class="field">
+          <span>Model</span>
+          <input name="model" type="text" list="models" spellcheck="false" autocapitalize="off">
+          <datalist id="models">
+            <option value="claude-opus-5-5">
+            <option value="claude-sonnet-5-5">
+            <option value="claude-fable-5-1">
+          </datalist>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Calendar</legend>
+        <label class="field">
+          <span>Time zone</span>
+          <input name="timeZone" type="text" spellcheck="false" autocapitalize="off" placeholder="Europe/Zurich">
+        </label>
+        <label class="field">
+          <span>Google OAuth client ID <small>(optional)</small></span>
+          <input name="googleClientId" type="text" spellcheck="false" autocapitalize="off" placeholder="….apps.googleusercontent.com">
+        </label>
+        <label class="field">
+          <span>Google calendar ID</span>
+          <input name="calendarId" type="text" spellcheck="false" autocapitalize="off" placeholder="primary">
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Shift codes</legend>
+        <p class="muted small">Without times a code becomes an all-day event. If the end is before the start, the shift ends the next day. Empty title: “Dienst &lt;code&gt;”.</p>
+        <div id="codes" class="codes"></div>
+        <button id="add-code" type="button" class="button secondary small">Add code</button>
+      </fieldset>
+
+      <p class="muted small">Everything is stored on this device only. The key is sent only to Anthropic.</p>
+    </form>
+  </dialog>
+
+  <template id="code-row">
+    <div class="code-row">
+      <input data-k="code" type="text" spellcheck="false" autocapitalize="characters" aria-label="Code" placeholder="Code">
+      <input data-k="title" type="text" aria-label="Title" placeholder="Title (Dienst …)">
+      <button type="button" class="icon-button small" data-remove aria-label="Remove">×</button>
+      <div class="times">
+        <label><span>Start</span><input data-k="start" type="time"></label>
+        <label><span>End</span><input data-k="end" type="time"></label>
+        <label class="skip"><input data-k="skip" type="checkbox"><span>Skip</span></label>
+      </div>
+    </div>
+  </template>
+</body>
+</html>
