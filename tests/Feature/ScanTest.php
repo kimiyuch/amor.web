@@ -116,7 +116,7 @@ class ScanTest extends TestCase
             ->assertSee('?month=2027-01', false)
             ->assertSee('Add a roster')
             ->assertSee(route('scans.create'), false)
-            ->assertDontSee('Every shift, straight into your calendar')
+            ->assertSee("Here's your month.", false)
             ->assertDontSee('Roster photo', false);
 
         $this->signedIn()->get('/?month=2027-01')

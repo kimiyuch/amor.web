@@ -35,6 +35,14 @@
         @endif
 
         @if ($calendar)
+            <div class="flex items-center gap-4">
+                <img src="/icons/mascot.svg" alt="" width="76" height="78" class="shrink-0 max-sm:w-16">
+                <div class="grid gap-0.5">
+                    <p class="font-display text-[1.0625rem] font-semibold text-balance sm:text-lg">Every shift, straight into your calendar</p>
+                    <p class="text-muted text-pretty">Here's your month. When a new roster comes, add it, and Amor keeps everything up to date.</p>
+                </div>
+            </div>
+
             @include('month-calendar', $calendar)
 
             <div class="grid gap-3">
