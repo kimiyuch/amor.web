@@ -28,6 +28,12 @@ class GoogleCalendarTest extends TestCase
 
     private bool $tokenRevoked = false;
 
+    /** Requests answered with "Rate Limit Exceeded" before Google gives in. */
+    private int $rateLimited = 0;
+
+    /** @var list<string> method and path of every calendar request */
+    private array $calls = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,16 +57,32 @@ class GoogleCalendarTest extends TestCase
     /** A tiny Google Calendar: PUT updates (404 if missing), POST creates, DELETE removes. */
     private function fakeEvents(Request $request)
     {
+        $limited = Http::response(['error' => ['message' => 'Rate Limit Exceeded', 'errors' => [['reason' => 'rateLimitExceeded']]]], 403);
         if ($this->googleDown) {
-            return Http::response(['error' => ['message' => 'Rate Limit Exceeded']], 403);
+            return $limited;
+        }
+        if ($this->rateLimited > 0) {
+            $this->rateLimited--;
+
+            return $limited;
         }
         preg_match('#/calendars/([^/]+)/events(?:/([^/?]+))?#', $request->url(), $m);
         $calendar = rawurldecode($m[1]);
+        $this->calls[] = $request->method().' '.($m[2] ?? '');
+
+        if ($request->method() === 'GET') {
+            $items = collect($this->google)
+                ->filter(fn ($e, $key) => str_starts_with($key, $calendar.'/') && ($e['extendedProperties']['private']['amor'] ?? null) === '1')
+                ->map(fn ($e, $key) => ['id' => substr($key, strlen($calendar) + 1)] + $e)
+                ->values();
+
+            return Http::response(['items' => $items]);
+        }
         $key = $calendar.'/'.($m[2] ?? $request['id']);
 
         return match ($request->method()) {
             'PUT' => isset($this->google[$key]) ? Http::response($this->google[$key] = $request->data()) : Http::response(['error' => ['message' => 'Not Found']], 404),
-            'POST' => Http::response($this->google[$key] = $request->data()),
+            'POST' => isset($this->google[$key]) ? Http::response(['error' => ['message' => 'The requested identifier already exists.']], 409) : Http::response($this->google[$key] = $request->data()),
             'DELETE' => isset($this->google[$key]) ? (function () use ($key) { unset($this->google[$key]); return Http::response(null, 204); })() : Http::response(null, 410),
         };
     }
@@ -106,13 +128,16 @@ class GoogleCalendarTest extends TestCase
     {
         $this->connect();
         ShiftCode::where('code', '1')->update(['start' => '06:45', 'end' => '15:15', 'title' => 'Frühdienst']);
-        $this->google['anna@gmail.com/amor20261203'] = ['summary' => 'old shift on a now free day'];
+        $this->google['anna@gmail.com/amor20261203'] = ['summary' => 'old shift on a now free day', 'extendedProperties' => ['private' => ['amor' => '1']]];
+        $this->google['anna@gmail.com/dentist'] = ['summary' => 'Not from Amor', 'extendedProperties' => ['private' => []]];
 
         $scan = $this->savedScan();
         $this->assertSame('24 shifts saved and added to Google Calendar.', session('status'));
 
-        $this->assertCount(24, $this->google);
+        $this->assertCount(25, $this->google);
+        $this->assertArrayHasKey('anna@gmail.com/dentist', $this->google, 'other events stay');
         $this->assertArrayNotHasKey('anna@gmail.com/amor20261203', $this->google, 'removed: no shift that day anymore');
+        $this->assertSame(1, collect($this->calls)->filter(fn ($c) => str_starts_with($c, 'DELETE'))->count(), 'only existing events are deleted');
         $this->assertSame([
             'summary' => 'Frühdienst',
             'start' => ['dateTime' => '2026-12-01T06:45:00', 'timeZone' => 'Europe/Zurich'],
@@ -125,11 +150,33 @@ class GoogleCalendarTest extends TestCase
         $codes['2026-12-01'] = '';
         $codes['2026-12-02'] = 'HO';
         $this->signedIn()->post("/scans/{$scan->id}/save", ['codes' => $codes]);
-        $this->assertCount(23, $this->google);
+        $this->assertCount(24, $this->google);
         $this->assertArrayNotHasKey('anna@gmail.com/amor20261201', $this->google);
         $this->assertSame('Dienst HO', $this->google['anna@gmail.com/amor20261202']['summary']);
 
         $this->signedIn()->withSession(['saved_scan' => $scan->id])->get('/')->assertDontSee('Add them to your calendar');
+    }
+
+    public function test_rate_limits_are_waited_out(): void
+    {
+        $this->connect();
+        $this->rateLimited = 2;
+
+        $this->savedScan();
+
+        $this->assertSame('24 shifts saved and added to Google Calendar.', session('status'));
+        $this->assertCount(24, $this->google);
+    }
+
+    public function test_an_event_deleted_by_hand_comes_back(): void
+    {
+        $this->connect();
+        // Google keeps the ID of a deleted event; creating it again answers 409.
+        $this->google['anna@gmail.com/amor20261201'] = ['summary' => 'deleted', 'extendedProperties' => ['private' => []]];
+
+        $this->savedScan();
+
+        $this->assertSame('Dienst 1', $this->google['anna@gmail.com/amor20261201']['summary']);
     }
 
     public function test_a_google_error_keeps_the_shifts_and_offers_a_retry(): void

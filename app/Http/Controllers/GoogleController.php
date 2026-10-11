@@ -35,12 +35,19 @@ class GoogleController extends Controller
 
         try {
             GoogleCalendar::connect($request->query('code'));
-            $this->syncUpcoming();
         } catch (GoogleCalendarException $e) {
             return view('google-connected', ['error' => $e->getMessage()]);
         }
 
-        return view('google-connected', ['error' => null, 'calendar' => GoogleCalendar::calendarName()]);
+        // Connected; now bring the shifts already saved into the calendar.
+        try {
+            $this->syncUpcoming();
+            $warning = null;
+        } catch (GoogleCalendarException $e) {
+            $warning = $e->getMessage();
+        }
+
+        return view('google-connected', ['error' => null, 'warning' => $warning, 'calendar' => GoogleCalendar::calendarName()]);
     }
 
     public function disconnect()

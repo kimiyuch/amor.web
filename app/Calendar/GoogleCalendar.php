@@ -4,7 +4,6 @@ namespace App\Calendar;
 
 use App\Models\Setting;
 use App\Models\Shift;
-use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
@@ -31,8 +30,8 @@ final class GoogleCalendar
         'https://www.googleapis.com/auth/calendar.events',
     ];
 
-    // Requests at a time; Google rejects bigger bursts per user.
-    private const BATCH = 6;
+    // Retries when Google asks to slow down (it limits bursts per user).
+    private const RETRIES = 5;
 
     public static function configured(): bool
     {
@@ -117,8 +116,8 @@ final class GoogleCalendar
     }
 
     /**
-     * Makes the calendar match the saved shifts from $from to $to: one event per shift,
-     * none on days without one.
+     * Makes the calendar match the saved shifts from $from to $to: one event per shift, and
+     * none of Amor's events on days without one. Only touches what needs to change.
      *
      * @return array{saved: int, removed: int}
      */
@@ -128,51 +127,102 @@ final class GoogleCalendar
         $events = ShiftCalendar::fromDatabase()
             ->events(Shift::whereBetween('date', [$from, $to])->get())
             ->keyBy('date');
-        $base = self::API.'/calendars/'.rawurlencode($calendarId).'/events';
-        $token = self::accessToken();
-        $saved = 0;
+        $existing = self::existingDates($calendarId, $from, $to);
+        $base = self::eventsUrl($calendarId);
         $removed = 0;
 
-        foreach (array_chunk(self::dates($from, $to), self::BATCH) as $dates) {
-            $responses = Http::pool(fn (Pool $pool) => array_map(function (string $date) use ($pool, $events, $base, $token) {
-                $request = $pool->as($date)->withToken($token)->acceptJson()->timeout(20);
-
-                return isset($events[$date])
-                    ? $request->put("{$base}/".self::eventId($date), self::body($events[$date]))
-                    : $request->delete("{$base}/".self::eventId($date));
-            }, $dates));
-
-            foreach ($dates as $date) {
-                $response = $responses[$date];
-                if (isset($events[$date])) {
-                    if ($response instanceof Response && $response->status() === 404) {
-                        // Not in the calendar yet: create it with the same ID.
-                        $response = self::api()->post($base, self::body($events[$date]));
-                    }
-                    self::check($response, 'Saving the shift on '.$date);
-                    $saved++;
-                } elseif ($response instanceof Response && in_array($response->status(), [404, 410], true)) {
-                    // Nothing to remove.
-                } else {
-                    self::check($response, 'Removing the event on '.$date);
-                    $removed++;
+        foreach ($events as $date => $event) {
+            if (in_array($date, $existing, true)) {
+                $response = self::send('PUT', "{$base}/".self::eventId($date), self::body($event));
+            } else {
+                $response = self::send('POST', $base, self::body($event));
+                if ($response->status() === 409) {
+                    // The ID is taken by an event deleted earlier: bring that one back.
+                    $response = self::send('PUT', "{$base}/".self::eventId($date), self::body($event));
                 }
+            }
+            self::check($response, 'Saving the shift on '.self::day($date));
+        }
+
+        foreach (array_diff($existing, $events->keys()->all()) as $date) {
+            $response = self::send('DELETE', "{$base}/".self::eventId($date));
+            if (! in_array($response->status(), [404, 410], true)) {
+                self::check($response, 'Removing the event on '.self::day($date));
+                $removed++;
             }
         }
 
-        return ['saved' => $saved, 'removed' => $removed];
+        return ['saved' => $events->count(), 'removed' => $removed];
     }
 
     /** Removes Amor's events from $from to $to, e.g. from a calendar that is no longer used. */
     public static function clear(string $calendarId, string $from, string $to): void
     {
-        $base = self::API.'/calendars/'.rawurlencode($calendarId).'/events';
-        foreach (self::dates($from, $to) as $date) {
-            $response = self::api()->delete("{$base}/".self::eventId($date));
+        foreach (self::existingDates($calendarId, $from, $to) as $date) {
+            $response = self::send('DELETE', self::eventsUrl($calendarId).'/'.self::eventId($date));
             if (! in_array($response->status(), [404, 410], true)) {
-                self::check($response, 'Removing the event on '.$date);
+                self::check($response, 'Removing the event on '.self::day($date));
             }
         }
+    }
+
+    /**
+     * Dates from $from to $to on which the calendar has an event made by Amor.
+     *
+     * @return list<string>
+     */
+    private static function existingDates(string $calendarId, string $from, string $to): array
+    {
+        $dates = [];
+        $pageToken = null;
+        do {
+            $response = self::send('GET', self::eventsUrl($calendarId), query: array_filter([
+                'privateExtendedProperty' => 'amor=1',
+                'timeMin' => ShiftCalendar::addDays($from, -1).'T00:00:00Z',
+                'timeMax' => ShiftCalendar::addDays($to, 2).'T00:00:00Z',
+                'maxResults' => 2500,
+                'pageToken' => $pageToken,
+            ]));
+            self::check($response, 'Reading the calendar');
+            foreach ($response->json('items', []) as $item) {
+                if (preg_match('/^amor(\d{4})(\d{2})(\d{2})$/', $item['id'] ?? '', $m)) {
+                    $date = "{$m[1]}-{$m[2]}-{$m[3]}";
+                    if ($date >= $from && $date <= $to) {
+                        $dates[] = $date;
+                    }
+                }
+            }
+            $pageToken = $response->json('nextPageToken');
+        } while ($pageToken);
+
+        return array_values(array_unique($dates));
+    }
+
+    /** Sends one request, waiting and retrying while Google asks to slow down. */
+    private static function send(string $method, string $url, array $body = [], array $query = []): Response
+    {
+        for ($attempt = 1; ; $attempt++) {
+            $options = array_filter(['json' => $body ?: null, 'query' => $query ?: null]);
+            $response = self::api()->send($method, $url, $options);
+            $reason = $response->json('error.errors.0.reason');
+            $slowDown = $response->status() === 429 || $response->serverError()
+                || ($response->status() === 403 && in_array($reason, ['rateLimitExceeded', 'userRateLimitExceeded'], true));
+            if (! $slowDown || $attempt >= self::RETRIES) {
+                return $response;
+            }
+            usleep((2 ** ($attempt - 1)) * 600_000 + random_int(0, 300_000));
+        }
+    }
+
+    private static function eventsUrl(string $calendarId): string
+    {
+        return self::API.'/calendars/'.rawurlencode($calendarId).'/events';
+    }
+
+    /** "29.10.2026", for messages. */
+    private static function day(string $date): string
+    {
+        return implode('.', array_reverse(explode('-', $date)));
     }
 
     /** Google event IDs allow a–v and 0–9; one fixed ID per date. */
@@ -198,17 +248,6 @@ final class GoogleCalendar
             'transparency' => 'opaque',
             'extendedProperties' => ['private' => ['amor' => '1', 'code' => $event->code]],
         ];
-    }
-
-    /** @return list<string> */
-    private static function dates(string $from, string $to): array
-    {
-        $dates = [];
-        for ($date = $from; $date <= $to; $date = ShiftCalendar::addDays($date, 1)) {
-            $dates[] = $date;
-        }
-
-        return $dates;
     }
 
     private static function api()
