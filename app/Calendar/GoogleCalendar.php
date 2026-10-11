@@ -30,6 +30,14 @@ final class GoogleCalendar
         'https://www.googleapis.com/auth/calendar.events',
     ];
 
+    // Google's event colors (colorId => English and German name, as in Google Calendar).
+    public const COLORS = [
+        '1' => 'Lavender (Lavendel)', '2' => 'Sage (Salbei)', '3' => 'Grape (Weintraube)',
+        '4' => 'Flamingo', '5' => 'Banana (Banane)', '6' => 'Tangerine (Mandarine)',
+        '7' => 'Peacock (Pfau)', '8' => 'Graphite (Grafit)', '9' => 'Blueberry (Heidelbeere)',
+        '10' => 'Basil (Basilikum)', '11' => 'Tomato (Tomate)',
+    ];
+
     // Retries when Google asks to slow down (it limits bursts per user).
     private const RETRIES = 5;
 
@@ -113,6 +121,17 @@ final class GoogleCalendar
     public static function useCalendar(string $id, string $name): void
     {
         self::store(['calendar_id' => $id, 'calendar_name' => $name]);
+    }
+
+    /** The color of Amor's events; null uses the calendar's color. */
+    public static function colorId(): ?string
+    {
+        return self::settings()['color_id'] ?? null;
+    }
+
+    public static function useColor(?string $colorId): void
+    {
+        self::store(['color_id' => isset(self::COLORS[$colorId]) ? $colorId : null]);
     }
 
     /**
@@ -238,7 +257,7 @@ final class GoogleCalendar
             ? ['date' => $value]
             : ['dateTime' => $value.':00', 'timeZone' => $timezone];
 
-        return [
+        return array_filter([
             'id' => self::eventId($event->date),
             'summary' => $event->title,
             'description' => "Code {$event->code} · Amor",
@@ -247,7 +266,9 @@ final class GoogleCalendar
             'end' => $when($event->end),
             'transparency' => 'opaque',
             'extendedProperties' => ['private' => ['amor' => '1', 'code' => $event->code]],
-        ];
+            // Without colorId the event takes the calendar's color (an update clears an old one).
+            'colorId' => self::colorId(),
+        ], fn ($value) => $value !== null);
     }
 
     private static function api()

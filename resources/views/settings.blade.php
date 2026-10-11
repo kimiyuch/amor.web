@@ -43,6 +43,18 @@
                 @else
                     <p class="text-muted text-pretty">Amor couldn't load the list of calendars just now; it keeps using the one it had.</p>
                 @endif
+                <div class="grid gap-2">
+                    <label for="google_color" class="font-semibold">Event color</label>
+                    <div class="grid grid-cols-[1fr_--spacing(8)]">
+                        <select id="google_color" name="google_color" class="field-input col-span-full row-start-1 appearance-none pr-8">
+                            <option value="">Calendar color</option>
+                            @foreach (\App\Calendar\GoogleCalendar::COLORS as $id => $name)
+                                <option value="{{ $id }}" @selected((string) $id === $googleColor)>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        <svg viewBox="0 0 8 5" width="8" height="5" fill="none" class="pointer-events-none col-start-2 row-start-1 place-self-center stroke-sky-900 dark:stroke-sky-50" aria-hidden="true"><path d="M.5.5 4 4 7.5.5" /></svg>
+                    </div>
+                </div>
                 <p><button type="submit" form="google-disconnect" class="font-semibold text-sky-700 underline decoration-sky-700/30 underline-offset-3 dark:text-sky-300 dark:decoration-sky-300/30">Disconnect Google Calendar</button></p>
             @elseif ($googleConfigured)
                 <p class="text-pretty">Sign in with the Google account whose calendar should get the shifts. You only need to do this once, on any device.</p>

@@ -222,6 +222,27 @@ class GoogleCalendarTest extends TestCase
         $this->assertSame(24, collect(array_keys($this->google))->filter(fn ($k) => str_starts_with($k, 'work@'))->count());
     }
 
+    public function test_the_event_color_can_be_chosen_and_reset(): void
+    {
+        $this->connect();
+        $this->savedScan();
+        $this->assertArrayNotHasKey('colorId', $this->google['anna@gmail.com/amor20261201']);
+
+        $settings = fn (string $color) => [
+            'person' => 'Anna Muster',
+            'google_color' => $color,
+            'codes' => ShiftCode::all(['code', 'title', 'start', 'end', 'skip'])->toArray(),
+        ];
+        $this->signedIn()->get('/settings')->assertSee('Basil (Basilikum)');
+        $this->signedIn()->put('/settings', $settings('10'))->assertSessionHasNoErrors();
+        $this->assertSame('10', GoogleCalendar::colorId());
+        $this->assertSame('10', $this->google['anna@gmail.com/amor20261201']['colorId']);
+
+        $this->signedIn()->put('/settings', $settings(''));
+        $this->assertNull(GoogleCalendar::colorId());
+        $this->assertArrayNotHasKey('colorId', $this->google['anna@gmail.com/amor20261201'], 'back to the calendar color');
+    }
+
     public function test_disconnecting_revokes_the_token(): void
     {
         $this->connect();

@@ -27,6 +27,7 @@ class SettingsController extends Controller
             'googleConnected' => GoogleCalendar::connected(),
             'googleCalendarId' => GoogleCalendar::calendarId(),
             'googleCalendars' => $this->googleCalendars(),
+            'googleColor' => GoogleCalendar::colorId(),
         ]);
     }
 
@@ -41,6 +42,7 @@ class SettingsController extends Controller
             'codes.*.end' => ['nullable', 'regex:/^\d{2}:\d{2}$/'],
             'codes.*.skip' => 'nullable|boolean',
             'google_calendar' => 'nullable|string|max:300',
+            'google_color' => 'nullable|string|max:2',
         ]);
 
         Setting::put('person', trim((string) ($data['person'] ?? '')));
@@ -66,6 +68,7 @@ class SettingsController extends Controller
         // Shift times or the calendar may have changed: bring the upcoming shifts up to date.
         if (GoogleCalendar::connected()) {
             try {
+                GoogleCalendar::useColor($data['google_color'] ?? null);
                 $this->updateGoogle($data['google_calendar'] ?? null);
             } catch (GoogleCalendarException $e) {
                 return redirect()->route('settings')->with('status', 'Settings saved.')->withErrors(['google' => $e->getMessage()]);
