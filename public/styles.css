@@ -480,10 +480,12 @@ dialog {
   background: var(--surface);
   color: var(--text);
   box-shadow: var(--ring);
+  --dialog-x: 22px;
 }
+@media (min-width: 700px) { dialog { --dialog-x: 28px; } }
 @media (min-width: 700px) { dialog { margin: auto; border-radius: 20px; max-height: 88dvh; } }
 dialog::backdrop { background: rgb(13 27 42 / 0.45); }
-dialog form { display: grid; padding: 0 var(--page-x) calc(24px + env(safe-area-inset-bottom)); }
+dialog form { display: grid; padding: 0 var(--dialog-x) calc(24px + env(safe-area-inset-bottom)); }
 .dialog-bar {
   position: sticky;
   top: 0;
@@ -491,8 +493,8 @@ dialog form { display: grid; padding: 0 var(--page-x) calc(24px + env(safe-area-
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 calc(-1 * var(--page-x));
-  padding: 12px var(--page-x);
+  margin: 0 calc(-1 * var(--dialog-x));
+  padding: 12px var(--dialog-x);
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
