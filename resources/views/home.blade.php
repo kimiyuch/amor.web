@@ -46,7 +46,7 @@
         @endif
 
         @if ($calendar)
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 pt-5 pb-4 sm:pt-6 sm:pb-5">
                 <img src="/icons/mascot.svg" alt="" width="76" height="78" class="shrink-0 max-sm:w-16">
                 <div class="grid gap-0.5">
                     <p class="font-display text-[1.0625rem] font-semibold text-balance sm:text-lg">Jeder Dienst direkt in deinem Kalender</p>
