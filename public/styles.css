@@ -577,3 +577,27 @@ dialog form { display: grid; padding: 0 var(--page-x) calc(24px + env(safe-area-
 .checkbox:not(:has(input:checked)) svg { opacity: 0; }
 @media (forced-colors: active) { .checkbox input { appearance: auto; } .checkbox svg { display: none; } }
 .photo:has(.status:not([hidden])) .photo-change { display: none; }
+
+/* ---------- phones: tighter, so name, photo and button fit on one screen ---------- */
+
+@media (max-width: 480px) {
+  :root { --page-x: 14px; }
+  h1 { font-size: 22px; }
+  .bar { padding-top: calc(env(safe-area-inset-top) + 2px); padding-bottom: 2px; }
+  .brand { font-size: 20px; }
+  main { padding-top: 4px; }
+  .view { gap: 16px; }
+  .intro { gap: 4px; padding-top: 0; }
+  .intro img { width: 92px; height: auto; margin-bottom: 2px; }
+  .field { gap: 6px; }
+  input[type="text"], input[type="password"], input[type="time"] { min-height: 44px; padding: 9px 12px; }
+  .button { min-height: 46px; padding-top: 11px; padding-bottom: 11px; }
+  .photo-pick { min-height: 136px; }
+  .photo-empty { padding: 16px; gap: 2px; }
+  .hint { padding: 10px 12px; }
+  .result-head h1 { font-size: 21px; }
+  .days td { padding-top: 8px; padding-bottom: 8px; }
+  .days tr.month td { padding-top: 18px; }
+  .strip img { height: 100px; }
+  .action-bar { padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+}
