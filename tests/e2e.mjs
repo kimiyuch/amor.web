@@ -126,6 +126,20 @@ assert.match(feed, /SUMMARY:Frühdienst/);
 assert.match(feed, /DTSTART;TZID=Europe\/Zurich:\d{8}T200000\r\nDTEND;TZID=Europe\/Zurich:\d{8}T073000/);
 assert.match(await page.getByRole('link', { name: 'Auf iPhone oder Mac abonnieren' }).getAttribute('href'), /^webcal:\/\//);
 
+// Discard a roster that was read but not saved
+await page.goto(BASE + '/scans/new');
+await page.locator('[data-photo-input]').setInputFiles(fixture);
+await page.waitForFunction(() => !document.querySelector('[data-photo-rotate]').hidden);
+await page.getByRole('button', { name: 'Dienste lesen' }).click();
+await page.getByRole('button', { name: 'Dienste speichern' }).waitFor({ timeout: 60_000 });
+await page.goto(BASE + '/');
+await page.getByText('Ein Dienstplan wartet aufs Prüfen.').waitFor();
+await page.screenshot({ path: shots + '8-open-roster.png' });
+page.once('dialog', (dialog) => dialog.accept());
+await page.getByRole('button', { name: 'Verwerfen' }).click();
+await page.getByText('Dienstplan verworfen.').waitFor();
+assert.equal(await page.getByText('Ein Dienstplan wartet aufs Prüfen.').count(), 0);
+
 await page.emulateMedia({ colorScheme: 'dark' });
 await page.goto(BASE + '/');
 await page.screenshot({ path: shots + '7-home-dark.png', fullPage: true });

@@ -10,6 +10,12 @@ class Scan extends Model
 
     protected $casts = ['result' => 'array'];
 
+    /** Being read, or read (with the person found) and not saved yet: can still be discarded. */
+    public function isOpen(): bool
+    {
+        return $this->isPending() || ($this->status === 'read' && ($this->result['person_found'] ?? false));
+    }
+
     public function isPending(): bool
     {
         return in_array($this->status, ['queued', 'reading'], true);

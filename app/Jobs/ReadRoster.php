@@ -30,12 +30,23 @@ class ReadRoster implements ShouldQueue
     public function handle(RosterReader $reader): void
     {
         $scan = $this->scan;
-        $scan->update(['status' => 'reading', 'status_text' => 'Foto wird vorbereitet…']);
         $disk = Storage::disk('local');
+        if ($scan->fresh()->status === 'discarded') {
+            $disk->delete($scan->photo_path);
+            $scan->update(['photo_path' => null]);
+
+            return;
+        }
+        $scan->update(['status' => 'reading', 'status_text' => 'Foto wird vorbereitet…']);
 
         try {
             $photo = new Photo($disk->path($scan->photo_path));
             $result = $reader->read($photo, $scan->person, fn (string $text) => $scan->update(['status_text' => $text]));
+
+            // Discarded while Claude was reading: keep nothing.
+            if ($scan->fresh()->status === 'discarded') {
+                return;
+            }
 
             $stripPath = null;
             if ($result['person_found'] && ($box = Photo::cleanBox($result['row_box'] ?? null))) {
@@ -50,7 +61,9 @@ class ReadRoster implements ShouldQueue
 
             $scan->update(['status' => 'read', 'status_text' => null, 'result' => $result, 'strip_path' => $stripPath]);
         } catch (RosterReadException $e) {
-            $scan->update(['status' => 'failed', 'error' => $e->getMessage()]);
+            if ($scan->fresh()->status !== 'discarded') {
+                $scan->update(['status' => 'failed', 'error' => $e->getMessage()]);
+            }
         } catch (Throwable $e) {
             Log::error('Reading a roster failed', ['scan' => $scan->id, 'exception' => $e]);
             $scan->update(['status' => 'failed', 'error' => 'Beim Lesen des Fotos ist etwas schiefgegangen. Bitte versuch es nochmals.']);

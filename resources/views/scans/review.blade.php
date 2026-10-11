@@ -91,12 +91,18 @@
         </form>
 
         <script type="application/json" id="shift-codes">@json($codes)</script>
+        @if ($scan->status === 'read')
+            <form method="POST" action="{{ route('scans.discard', $scan) }}" id="discard" data-confirm="Dienstplan verwerfen? Die gelesenen Tage werden nicht gespeichert.">@csrf</form>
+        @endif
     @endunless
 
     @if ($found)
         <x-slot:bar>
             <div class="sticky bottom-0 z-10 bg-white/90 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-1px_0_rgb(20_38_58/0.08),0_-12px_32px_-16px_rgb(20_38_58/0.25)] backdrop-blur-lg dark:bg-sky-950/90 dark:shadow-[0_-1px_0_rgb(255_255_255/0.08)]">
                 <div class="mx-auto flex max-w-xl gap-2.5">
+                    @if ($scan->status === 'read')
+                        <x-button type="submit" form="discard" variant="secondary" class="shrink-0">Verwerfen</x-button>
+                    @endif
                     @if ($scan->status === 'saved' && ! \App\Calendar\GoogleCalendar::connected())
                         <x-button :href="route('scans.ics', $scan)" variant="secondary" icon="calendar-days" class="shrink-0">Zum Kalender</x-button>
                     @endif

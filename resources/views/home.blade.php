@@ -29,10 +29,20 @@
         @endif
 
         @if ($openScan)
-            <a href="{{ route('scans.show', $openScan) }}" class="flex items-center justify-between gap-3 rounded-xl bg-sky-100 px-3.5 py-3 hover:bg-sky-200 dark:bg-sky-300/12 dark:hover:bg-sky-300/18">
-                <span>{{ $openScan->isPending() ? 'Ein Dienstplan wird gerade gelesen.' : 'Ein Dienstplan ist gelesen und wartet darauf, dass du ihn prüfst.' }}</span>
-                <x-heroicon-m-chevron-right class="size-5 shrink-0" />
-            </a>
+            <div class="flex items-center gap-1 rounded-xl bg-sky-100 py-1.5 pr-1.5 pl-3.5 dark:bg-sky-300/12">
+                <a href="{{ route('scans.show', $openScan) }}" class="flex flex-1 items-center gap-2 py-1.5 font-semibold text-sky-900 hover:underline dark:text-sky-50">
+                    <span class="text-pretty">{{ $openScan->isPending() ? 'Ein Dienstplan wird gelesen.' : 'Ein Dienstplan wartet aufs Prüfen.' }}</span>
+                    <x-heroicon-m-chevron-right class="size-5 shrink-0" />
+                </a>
+                <form method="POST" action="{{ route('scans.discard', $openScan) }}"
+                    @unless ($openScan->isPending()) data-confirm="Dienstplan verwerfen? Die gelesenen Tage werden nicht gespeichert." @endunless>
+                    @csrf
+                    <button type="submit" class="relative rounded-lg px-2.5 py-2 text-[0.9375rem] font-semibold text-sky-900/70 hover:bg-sky-200 hover:text-sky-900 focus-visible:outline-2 focus-visible:outline-sky-500 dark:text-sky-100/70 dark:hover:bg-white/10 dark:hover:text-sky-50">
+                        <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
+                        Verwerfen
+                    </button>
+                </form>
+            </div>
         @endif
 
         @if ($calendar)

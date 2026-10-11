@@ -100,6 +100,44 @@ class ScanTest extends TestCase
         $this->assertFalse(Shift::whereDate('date', '2026-12-01')->exists());
     }
 
+    public function test_a_read_roster_can_be_discarded(): void
+    {
+        $scan = $this->scan();
+        $this->signedIn()->get('/')->assertSee('Ein Dienstplan wartet aufs Prüfen.')->assertSee('Verwerfen');
+        $this->signedIn()->get("/scans/{$scan->id}")->assertSee(route('scans.discard', $scan), false);
+
+        $this->signedIn()->post("/scans/{$scan->id}/discard")->assertRedirect('/')->assertSessionHas('status', 'Dienstplan verworfen.');
+
+        $this->assertSame('discarded', $scan->fresh()->status);
+        $this->assertSame([], Storage::disk('local')->allFiles(), 'the row strip is gone too');
+        $this->assertSame(0, Shift::count());
+        $this->signedIn()->get('/')->assertDontSee('wartet aufs Prüfen');
+        $this->signedIn()->get("/scans/{$scan->id}")->assertRedirect('/');
+        $this->signedIn()->post("/scans/{$scan->id}/discard")->assertNotFound();
+    }
+
+    public function test_a_roster_discarded_while_being_read_keeps_nothing(): void
+    {
+        Storage::disk('local')->put('scans/photo.jpg', UploadedFile::fake()->image('roster.jpg', 800, 500)->getContent());
+        $scan = Scan::create(['person' => 'Anna Muster', 'photo_path' => 'scans/photo.jpg', 'status' => 'queued']);
+        $this->signedIn()->get("/scans/{$scan->id}")->assertSee('Abbrechen');
+
+        $this->signedIn()->post("/scans/{$scan->id}/discard")->assertRedirect('/');
+        (new \App\Jobs\ReadRoster($scan))->handle(app(\App\Roster\RosterReader::class));
+
+        $this->assertSame('discarded', $scan->fresh()->status);
+        $this->assertNull($scan->fresh()->result);
+        $this->assertSame([], Storage::disk('local')->allFiles(), 'the photo is deleted, no strip is made');
+    }
+
+    public function test_a_saved_roster_cannot_be_discarded(): void
+    {
+        $scan = $this->scan();
+        $this->signedIn()->post("/scans/{$scan->id}/save", ['codes' => collect($scan->days())->pluck('code', 'date')->all()]);
+        $this->signedIn()->post("/scans/{$scan->id}/discard")->assertNotFound();
+        $this->signedIn()->get("/scans/{$scan->id}")->assertDontSee('id="discard"', false);
+    }
+
     public function test_the_home_page_shows_the_month_with_its_shifts(): void
     {
         ShiftCode::where('code', '1')->update(['start' => '06:45', 'end' => '15:15', 'title' => 'Frühdienst']);

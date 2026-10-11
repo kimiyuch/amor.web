@@ -45,6 +45,9 @@ class ScanController extends Controller
 
     public function show(Scan $scan)
     {
+        if ($scan->status === 'discarded') {
+            return redirect()->route('home');
+        }
         if ($scan->isPending() || $scan->status === 'failed') {
             return view('scans.progress', ['scan' => $scan]);
         }
@@ -62,6 +65,22 @@ class ScanController extends Controller
             'days' => $days,
             'codes' => ShiftCode::orderBy('code')->get(['code', 'title', 'start', 'end', 'skip']),
         ]);
+    }
+
+    /**
+     * Drops a roster that is being read or waiting to be checked. Nothing gets saved; if Claude
+     * is still reading, the job throws its result away when it finishes.
+     */
+    public function discard(Scan $scan)
+    {
+        abort_unless($scan->isOpen(), 404);
+        $disk = Storage::disk('local');
+        if ($scan->strip_path) {
+            $disk->delete($scan->strip_path);
+        }
+        $scan->update(['status' => 'discarded', 'strip_path' => null, 'status_text' => null]);
+
+        return redirect()->route('home')->with('status', 'Dienstplan verworfen.');
     }
 
     public function status(Scan $scan)

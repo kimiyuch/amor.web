@@ -21,7 +21,7 @@ class HomeController extends Controller
         return view('home', [
             'person' => Setting::person(),
             'calendar' => Shift::exists() ? $this->month($request->query('month')) : null,
-            'openScan' => in_array($latest?->status, ['queued', 'reading', 'read'], true) ? $latest : null,
+            'openScan' => $latest?->isOpen() ? $latest : null,
             // Right after saving: offer the roster's shifts as a file to add to a calendar.
             'savedScan' => Scan::find(session('saved_scan')),
             'googleError' => session('google_error'),
