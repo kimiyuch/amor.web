@@ -603,3 +603,4 @@ dialog form { display: grid; padding: 0 var(--dialog-x) calc(24px + env(safe-are
   .strip img { height: 100px; }
   .action-bar { padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
 }
+#setup-status { overflow-wrap: anywhere; }

@@ -80,6 +80,10 @@ Event IDs are `dienst` + FNV-1a hash of the person's name (base32) + `yyyymmdd`.
 
 The key is stored in the browser and only sent to Anthropic. That's fine for personal use. If the app is shared more widely, move the Claude call behind a small server function that holds the key.
 
+### Other devices
+
+Settings → *Other devices* → **Share setup link** creates a link that carries all settings (API key, name, shift times). Opening it on another computer or phone sets Amor up there; the settings travel in the URL fragment (after `#`), which is never sent to the server, and Amor removes it from the address bar. Amor on the iPhone home screen can't be opened from a link, so paste the link into *Paste a setup link* there. Treat the link like the key itself.
+
 ### Shift times
 
 Times aren't on the roster. Enter them once in Settings → *Shift codes*. Codes without times become all-day events; if the end is before the start, the shift ends the next day; *Skip* creates no event. Codes found in a scan that aren't in the table are added automatically.

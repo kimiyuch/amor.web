@@ -131,6 +131,34 @@ await page.screenshot({ path: shots + "5-synced.png", fullPage: true });
 await page.emulateMedia({ colorScheme: "dark" });
 await page.screenshot({ path: shots + "6-dark.png", fullPage: true });
 
+// Setup link: share it here, open it on a fresh device, and paste it on another
+await page.emulateMedia({ colorScheme: "light" });
+await page.locator("#open-settings").click();
+await page.evaluate(() => { navigator.share = async ({ url }) => { window.__setupUrl = url; }; });
+await page.getByRole("button", { name: "Share setup link" }).click();
+const setupUrl = await page.waitForFunction(() => window.__setupUrl).then((h) => h.jsonValue());
+await page.screenshot({ path: shots + "7-setup-link.png" });
+await page.getByRole("button", { name: "Done" }).click();
+
+const fresh = await (await browser.newContext(devices["iPhone 12"])).newPage();
+await fresh.goto(BASE + "?mock" + new URL(setupUrl).hash);
+assert.equal(await fresh.locator("#setup-done").textContent(), "Amor is set up on this device.");
+assert.equal(new URL(fresh.url()).hash, "", "settings removed from the address bar");
+const moved = await fresh.evaluate(() => JSON.parse(localStorage.getItem("dienstplan.settings.v1")));
+assert.equal(moved.apiKey, "sk-ant-mock");
+assert.equal(moved.person, "Anna Muster");
+assert.equal(moved.codes.find((c) => c.code === "1").start, "06:45");
+assert.equal(await fresh.locator("#person").inputValue(), "Anna Muster");
+
+const pasted = await (await browser.newContext(devices["iPhone 12"])).newPage();
+await pasted.goto(BASE + "?mock");
+await pasted.locator("#open-settings").click();
+await pasted.locator("#setup-input").fill("no link");
+assert.equal(await pasted.locator("#setup-status").textContent(), "That isn't a setup link.");
+await pasted.locator("#setup-input").fill(setupUrl);
+assert.equal(await pasted.locator("#setup-status").textContent(), "Settings imported.");
+assert.equal(await pasted.locator("#set-api-key").inputValue(), "sk-ant-mock");
+
 assert.deepEqual(errors, []);
 console.log(`e2e ok (${engine.name()}, .ics via ${canShareFiles ? "share sheet" : "download"}): ${checks.length} API checks, ${eventCount} Google events, status "${status1}"`);
 await browser.close();

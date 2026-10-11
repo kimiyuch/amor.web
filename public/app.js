@@ -33,6 +33,39 @@ function loadSettings() {
 const settings = loadSettings();
 const saveSettings = () => localStorage.setItem(STORE, JSON.stringify(settings));
 
+// ---------- setup links: carry the settings to another device ----------
+// The settings travel in the URL fragment, which browsers never send to the server.
+
+const SETUP = "#setup=";
+
+function setupLink() {
+  const bytes = new TextEncoder().encode(JSON.stringify(settings));
+  const base64 = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `${location.origin}${location.pathname}${SETUP}${base64}`;
+}
+
+/** Applies the settings from a setup link (or its fragment); false if it isn't one. */
+function applySetup(text) {
+  const start = text.indexOf(SETUP);
+  if (start < 0) return false;
+  try {
+    const base64 = text.slice(start + SETUP.length).trim().replace(/-/g, "+").replace(/_/g, "/");
+    const data = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))));
+    for (const [key, fallback] of Object.entries(DEFAULTS)) {
+      const ok = Array.isArray(fallback) ? Array.isArray(data[key]) : typeof data[key] === typeof fallback;
+      if (ok) settings[key] = data[key];
+    }
+    saveSettings();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const openedSetupLink = location.hash.startsWith(SETUP);
+const setUpByLink = openedSetupLink && applySetup(location.hash);
+if (openedSetupLink) history.replaceState(null, "", location.pathname + location.search);
+
 const state = {
   file: null,
   bitmap: null,
@@ -404,8 +437,49 @@ $("add-code").addEventListener("click", () => {
   $("codes").lastElementChild.scrollIntoView({ block: "nearest" });
 });
 
+$("share-setup").addEventListener("click", async () => {
+  const url = setupLink();
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Amor setup", url });
+      return;
+    } catch (err) {
+      if (err.name === "AbortError") return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    setupStatus("Link copied. Open it on the other device.");
+  } catch {
+    setupStatus(`Copy this link: ${url}`);
+  }
+});
+
+$("setup-input").addEventListener("input", () => {
+  const text = $("setup-input").value.trim();
+  if (!text) return show($("setup-status"), false);
+  if (!applySetup(text)) return setupStatus("That isn't a setup link.");
+  $("setup-input").value = "";
+  for (const name of FIELDS) form.elements[name].value = settings[name] ?? "";
+  form.elements.removeEmpty.checked = settings.removeEmpty;
+  $("person").value = settings.person;
+  renderCodes();
+  setupStatus("Settings imported.");
+});
+
+function setupStatus(text) {
+  $("setup-status").textContent = text;
+  show($("setup-status"), true);
+}
+
 // ---------- start ----------
 
+if (openedSetupLink) {
+  $("setup-done").textContent = setUpByLink
+    ? "Amor is set up on this device."
+    : "This setup link didn't work. Ask for a new one.";
+  show($("setup-done"), true);
+}
 updateScanState();
 if ("serviceWorker" in navigator && !new URLSearchParams(location.search).has("mock")) {
   navigator.serviceWorker.register("sw.js").catch((err) => console.warn("Service worker:", err));

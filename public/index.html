@@ -37,6 +37,7 @@
           <p>Photograph the duty roster. Amor finds your row and reads each day.</p>
         </div>
 
+        <p id="setup-done" class="hint" hidden></p>
         <p id="setup-hint" class="hint" hidden>To get started, add your Anthropic API key in <button type="button" class="link" data-open-settings>Settings</button>.</p>
 
         <div class="field">
@@ -162,6 +163,17 @@
         <p class="muted">Codes without times become all-day events. If the end is before the start, the shift ends the next day. Without a title, the event is called “Dienst” and the code.</p>
         <div id="codes" class="codes" role="list"></div>
         <button id="add-code" type="button" class="button secondary small">Add code</button>
+      </section>
+
+      <section class="settings-section">
+        <h3>Other devices</h3>
+        <p class="muted">Set up Amor on another phone or computer in one step. The link carries these settings, including the API key, so only send it to people you trust.</p>
+        <button id="share-setup" type="button" class="button secondary small">Share setup link</button>
+        <div class="field">
+          <label for="setup-input">Paste a setup link <small>For Amor on the iPhone home screen, which links can't open.</small></label>
+          <input id="setup-input" name="setupLink" type="text" inputmode="url" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="https://amor.kimiyu.ch/#setup=…">
+        </div>
+        <p id="setup-status" role="status" hidden></p>
       </section>
 
       <p class="muted footnote">Everything is stored on this device only. The key is only sent to Anthropic.</p>
