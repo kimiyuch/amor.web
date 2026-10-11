@@ -38,6 +38,7 @@ const state = {
   previewUrl: null,
   stripUrl: null,
   result: null, // { row_label, period_start, period_end, days, notes, ... }
+  rows: [], // the table row of each day
   person: "",
   abort: null,
 };
@@ -45,6 +46,10 @@ const state = {
 // ---------- formatting ----------
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const MONTHS = new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" });
+const weekday = (date) => WEEKDAYS[new Date(date).getUTCDay()];
+const formatDay = (date) => `${date.slice(8)}.${date.slice(5, 7)}.`;
+const formatMonth = (date) => MONTHS.format(new Date(date));
 function formatDate(date) {
   const [y, m, d] = date.split("-").map(Number);
   const wd = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
@@ -84,6 +89,7 @@ $("photo").addEventListener("change", async () => {
     state.previewUrl = URL.createObjectURL(file);
     $("preview").src = state.previewUrl;
     show($("preview"), true);
+    show($("intro"), false);
     $("photo-label").textContent = "Choose another photo";
   } catch (err) {
     showError("This photo could not be opened. Try a JPEG or PNG.");
@@ -173,7 +179,16 @@ async function renderResult() {
 
   const tbody = $("days");
   tbody.replaceChildren();
+  state.rows = [];
+  let month = "";
   for (const [i, day] of r.days.entries()) {
+    if (day.date.slice(0, 7) !== month) {
+      month = day.date.slice(0, 7);
+      const heading = document.createElement("tr");
+      heading.className = "month";
+      heading.append(Object.assign(document.createElement("td"), { colSpan: 3, textContent: formatMonth(day.date) }));
+      tbody.append(heading);
+    }
     const tr = document.createElement("tr");
     tr.classList.toggle("uncertain", day.uncertain);
     tr.classList.toggle("weekend", [0, 6].includes(new Date(day.date).getUTCDay()));
@@ -188,18 +203,19 @@ async function renderResult() {
       r.days[i].code = input.value.trim();
       r.days[i].uncertain = false;
       tr.classList.remove("uncertain");
-      tr.querySelector(".event").textContent = describeEvent(eventFor(r.days[i], settings, state.person));
+      updateRow(i);
     });
+    const date = Object.assign(document.createElement("td"), { className: "date" });
+    date.append(Object.assign(document.createElement("b"), { textContent: weekday(day.date) }), formatDay(day.date));
     tr.append(
-      Object.assign(document.createElement("td"), { textContent: formatDate(day.date), className: "date" }),
+      date,
       Object.assign(document.createElement("td"), { className: "code" }),
-      Object.assign(document.createElement("td"), {
-        className: "event",
-        textContent: describeEvent(eventFor(day, settings, state.person)),
-      }),
+      Object.assign(document.createElement("td"), { className: "event" }),
     );
     tr.children[1].append(input);
     tbody.append(tr);
+    state.rows.push(tr);
+    updateRow(i);
   }
   show($("uncertain-hint"), r.days.some((d) => d.uncertain));
   show($("google"), Boolean(settings.googleClientId));
@@ -208,12 +224,18 @@ async function renderResult() {
   show($("result"), true);
 }
 
+/** Shows the resulting event of day i and colors its code by kind. */
+function updateRow(i) {
+  const event = eventFor(state.result.days[i], settings, state.person);
+  const tr = state.rows[i];
+  tr.classList.toggle("timed", Boolean(event && !event.allDay));
+  tr.classList.toggle("allday", Boolean(event?.allDay));
+  tr.querySelector(".event").textContent = describeEvent(event);
+}
+
 function refreshPreviews() {
   if (!state.result) return;
-  const rows = $("days").children;
-  state.result.days.forEach((day, i) => {
-    rows[i].querySelector(".event").textContent = describeEvent(eventFor(day, settings, state.person));
-  });
+  state.result.days.forEach((_, i) => updateRow(i));
   show($("google"), Boolean(settings.googleClientId));
 }
 

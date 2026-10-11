@@ -1,10 +1,10 @@
 // Network-first cache for the app shell and the SDK from esm.sh. API calls are never cached.
-const CACHE = "dienstplan-v1";
+const CACHE = "amor-v2";
 // Keep in sync with the import in extract.js.
 const SDK = "https://esm.sh/@anthropic-ai/sdk@0.133.0?bundle";
 const SHELL = [
   "./", "index.html", "styles.css", "app.js", "extract.js", "calendar.js", "manifest.webmanifest",
-  "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png",
+  "icons/icon.svg", "icons/mascot.svg", "fonts/figtree-600.woff2", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png",
 ];
 
 // Caches an esm.sh module and everything it imports, so the SDK also loads offline.

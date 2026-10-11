@@ -1,6 +1,21 @@
-# amor.web – Dienstplan → Calendar
+<p align="center">
+  <img src="docs/icon.png" width="128" height="128" alt="Amor icon">
+</p>
 
-A phone app (PWA) that reads a photographed POLYPOINT/PEP duty roster ("Dienstplan") with Claude and turns one person's shifts into calendar events: as an `.ics` file for any calendar app, or written directly to Google Calendar. Live at [amor.kimiyu.ch](https://amor.kimiyu.ch).
+<h1 align="center">Amor</h1>
+
+<p align="center">
+  Photograph the duty roster, and every shift goes into your calendar.<br>
+  A lovebird that reads POLYPOINT/PEP rosters for you. 🦜
+</p>
+
+<p align="center">
+  <a href="https://amor.kimiyu.ch"><b>Open Amor</b></a>
+</p>
+
+---
+
+Amor is a phone app (PWA) that reads a photographed duty roster ("Dienstplan") with Claude and turns one person's shifts into calendar events: as an `.ics` file for any calendar app, or written directly to Google Calendar.
 
 Static files only: no backend, no build step. The spec is in [docs/spec.md](docs/spec.md).
 
@@ -39,6 +54,11 @@ The end-to-end test reads a synthetic roster through a mocked Anthropic SSE stre
 | `public/calendar.js` | Code → event mapping, Google Calendar sync, `.ics` export and delivery |
 | `public/sw.js` | Network-first cache for the app and the SDK; API calls are never cached |
 | `public/mock.js` | Test double used by `?mock` and the end-to-end test; not deployed |
+| `scripts/make-icon.mjs` | Draws the icon (a peach-faced lovebird with a heart-shaped face on a calendar page) and renders every PNG |
+
+### Look
+
+The colors come from the icon and are defined at the top of `public/styles.css`: `sky` for the background, `leaf` for the lovebird and `peach` for its face and the calendar band. Buttons use a deeper peach (`#cc4232`) so white text stays readable. Headings use Figtree (SIL Open Font License, self-hosted in `public/fonts`); body text uses the system font. After changing the icon, run `node scripts/make-icon.mjs`.
 
 ### How the extraction works
 

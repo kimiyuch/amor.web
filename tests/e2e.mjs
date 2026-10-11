@@ -37,7 +37,8 @@ await page.locator("#result").waitFor({ timeout: 30_000 });
 const checks = await page.evaluate(() => window.__mock.checks);
 for (const c of checks) assert.ok(c.ok, `mock check failed: ${c.name}`);
 assert.equal(checks.length, 13, "both API turns ran");
-assert.equal(await page.locator("#days tr").count(), 34);
+assert.equal(await page.locator("#days tr:not(.month)").count(), 34);
+assert.deepEqual(await page.locator("#days tr.month").allTextContents(), ["December 2026", "January 2027"]);
 assert.equal(await page.locator("#days tr.uncertain").count(), 1);
 assert.match(await page.locator("#result-title").textContent(), /Muster Anna/);
 assert.ok(await page.locator("#strip-img").evaluate((img) => img.complete && img.naturalWidth > 1000), "row strip rendered");
@@ -46,7 +47,7 @@ assert.ok(codes.includes("X7"), "unknown code added to the table");
 await page.screenshot({ path: shots + "3-result.png", fullPage: true });
 
 // Live preview when editing a code
-const row3 = page.locator("#days tr").nth(2);
+const row3 = page.locator("#days tr:not(.month)").nth(2);
 await row3.locator("input").fill("HO");
 assert.equal(await row3.locator(".event").textContent(), "Dienst HO · all day");
 
@@ -69,9 +70,9 @@ await page.locator('input[name="googleClientId"]').fill("mock.apps.googleusercon
 await page.screenshot({ path: shots + "4-settings.png" });
 await page.getByRole("button", { name: "Done" }).click();
 await page.locator("#google").waitFor();
-assert.equal(await page.locator("#days tr").nth(0).locator(".event").textContent(), "Dienst 1 · 06:45–15:15");
-assert.equal(await page.locator("#days tr").nth(5).locator(".event").textContent(), "Dienst S1/BD · 20:00–07:30 (+1)");
-assert.equal(await page.locator("#days tr").nth(9).locator(".event").textContent(), "—"); // B skipped
+assert.equal(await page.locator("#days tr:not(.month)").nth(0).locator(".event").textContent(), "Dienst 1 · 06:45–15:15");
+assert.equal(await page.locator("#days tr:not(.month)").nth(5).locator(".event").textContent(), "Dienst S1/BD · 20:00–07:30 (+1)");
+assert.equal(await page.locator("#days tr:not(.month)").nth(9).locator(".event").textContent(), "—"); // B skipped
 
 // .ics: share sheet where files can be shared (WebKit, like iOS), download elsewhere
 const canShareFiles = await page.evaluate(() => Boolean(navigator.canShare?.({ files: [new File(["x"], "a.ics", { type: "text/calendar" })] })));

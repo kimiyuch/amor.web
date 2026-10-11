@@ -1,14 +1,14 @@
 {
-  "name": "Dienstplan",
-  "short_name": "Dienstplan",
-  "description": "Turns a photo of a duty roster into calendar events.",
+  "name": "Amor",
+  "short_name": "Amor",
+  "description": "Photograph the duty roster, and every shift goes into your calendar.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f4f6f5",
-  "theme_color": "#0f766e",
+  "background_color": "#f3f9fd",
+  "theme_color": "#e1f2fc",
   "icons": [
     {
       "src": "icons/icon.svg",

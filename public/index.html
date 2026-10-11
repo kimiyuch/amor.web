@@ -3,24 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Dienstplan</title>
-  <meta name="description" content="Turns a photo of a duty roster into calendar events.">
-  <meta name="theme-color" content="#0f766e" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0b1416" media="(prefers-color-scheme: dark)">
+  <title>Amor</title>
+  <meta name="description" content="Photograph the duty roster, and every shift goes into your calendar.">
+  <meta name="theme-color" content="#e1f2fc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#122a40" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Dienstplan">
+  <meta name="apple-mobile-web-app-title" content="Amor">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css">
+  <link rel="preload" href="fonts/figtree-600.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="modulepreload" href="https://esm.sh/@anthropic-ai/sdk@0.133.0?bundle">
   <script type="module" src="app.js"></script>
 </head>
 <body>
   <header class="bar">
-    <h1>Dienstplan</h1>
+    <h1 class="brand"><img src="icons/icon.svg" alt="">Amor</h1>
     <button id="open-settings" class="icon-button" type="button" aria-label="Settings">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
     </button>
@@ -28,6 +29,12 @@
 
   <main>
     <section id="scan" class="card">
+      <div id="intro" class="intro">
+        <img src="icons/mascot.svg" alt="" width="148" height="151">
+        <h2>Every shift, straight into your calendar</h2>
+        <p>Photograph the duty roster. Amor finds your row and reads each day.</p>
+      </div>
+
       <p id="setup-hint" class="hint" hidden>Add your Anthropic API key in <button type="button" class="link" data-open-settings>Settings</button> first.</p>
 
       <label class="field">
@@ -46,7 +53,7 @@
       <button id="read" class="button primary" type="button" disabled>Read shifts</button>
 
       <div id="status" class="status" role="status" aria-live="polite" hidden>
-        <span class="spinner" aria-hidden="true"></span>
+        <img src="icons/mascot.svg" alt="">
         <span id="status-text"></span>
         <button id="cancel" type="button" class="link">Cancel</button>
       </div>
@@ -54,8 +61,10 @@
     </section>
 
     <section id="result" class="card" hidden>
-      <h2 id="result-title"></h2>
-      <p id="result-period" class="muted"></p>
+      <div class="result-head">
+        <h2 id="result-title"></h2>
+        <p id="result-period" class="period"></p>
+      </div>
       <p id="result-notes" class="notes" hidden></p>
 
       <figure class="strip-wrap" id="strip-wrap" hidden>
@@ -65,11 +74,10 @@
 
       <div class="table-wrap">
         <table class="days">
-          <thead><tr><th>Date</th><th>Code</th><th>Event</th></tr></thead>
           <tbody id="days"></tbody>
         </table>
       </div>
-      <p id="uncertain-hint" class="muted" hidden><span class="swatch"></span> Unsure – please check.</p>
+      <p id="uncertain-hint" class="muted small" hidden><span class="swatch"></span> Hard to read on the photo. Compare with the row above.</p>
 
       <div class="actions">
         <button id="ics" class="button primary" type="button">Add to calendar (.ics)</button>

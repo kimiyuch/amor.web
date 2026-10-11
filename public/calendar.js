@@ -253,7 +253,7 @@ export function buildIcs({ days, settings, person }) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Dienstplan//Calendar App//EN",
+    "PRODID:-//Amor//Dienstplan//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     ...(withTzid && events.some((e) => !e.allDay) ? vtimezone(tz) : []),
