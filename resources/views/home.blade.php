@@ -10,7 +10,7 @@
         @if ($googleError && $savedScan)
             <section class="grid gap-3 rounded-2xl bg-peach-50 p-4 text-peach-800 dark:bg-peach-400/10 dark:text-peach-300" role="alert">
                 <p class="flex gap-2.5"><x-heroicon-s-exclamation-triangle class="h-lh w-4 shrink-0" />{{ $googleError }}</p>
-                <form method="POST" action="{{ route('google.sync', $savedScan) }}">
+                <form method="POST" action="{{ route('google.sync', $savedScan) }}" data-busy="Adding to Google Calendar…">
                     @csrf
                     <x-button type="submit" variant="secondary" size="sm" icon="arrow-path">Try again</x-button>
                 </form>

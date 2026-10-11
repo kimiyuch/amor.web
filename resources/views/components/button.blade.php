@@ -1,7 +1,7 @@
 @props(['variant' => 'primary', 'size' => 'md', 'href' => null, 'icon' => null])
 @php
     $classes = [
-        'relative inline-flex items-center justify-center gap-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:opacity-40 active:not-disabled:scale-98 dark:focus-visible:outline-sky-300',
+        'relative inline-flex items-center justify-center gap-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:not-aria-busy:opacity-40 aria-busy:cursor-progress active:not-disabled:scale-98 dark:focus-visible:outline-sky-300',
         $size === 'sm'
             ? 'min-h-9 rounded-[10px] py-1.5 text-[0.9375rem] '.($icon ? 'pr-3 pl-2' : 'px-3')
             : 'min-h-12 rounded-xl py-3 '.($icon ? 'pr-4 pl-3' : 'px-4'),

@@ -169,6 +169,41 @@ for (const button of document.querySelectorAll('[data-copy]')) {
     });
 }
 
+// ---------- busy buttons: saving can take a few seconds while Amor writes to Google ----------
+
+const SPINNER = `<svg viewBox="0 0 24 24" fill="none" class="size-5 shrink-0 animate-spin motion-reduce:animate-[spin_3s_linear_infinite]" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".3" stroke-width="3" />
+    <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+</svg>`;
+
+const busyButtons = (form) => [
+    ...(form.id ? document.querySelectorAll(`button[type=submit][form="${form.id}"]`) : []),
+    ...form.querySelectorAll('button[type=submit]:not([form])'),
+];
+
+for (const form of document.querySelectorAll('form[data-busy]')) {
+    form.addEventListener('submit', (event) => {
+        if (event.defaultPrevented) return;
+        for (const button of busyButtons(form)) {
+            button.dataset.idle = button.innerHTML;
+            button.innerHTML = `${SPINNER}<span>${form.dataset.busy}</span>`;
+            button.setAttribute('aria-busy', 'true');
+            // Disabled after the submit event has run, so the form still sends.
+            setTimeout(() => (button.disabled = true));
+        }
+    });
+}
+
+// Coming back with the Back button shows the page as it was left: make the buttons usable again.
+window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    for (const button of document.querySelectorAll('button[aria-busy=true]')) {
+        button.innerHTML = button.dataset.idle;
+        button.removeAttribute('aria-busy');
+        button.disabled = false;
+    }
+});
+
 for (const form of document.querySelectorAll('form[data-confirm]')) {
     form.addEventListener('submit', (event) => confirm(form.dataset.confirm) || event.preventDefault());
 }

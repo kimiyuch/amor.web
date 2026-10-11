@@ -70,7 +70,17 @@ assert.equal(await third.locator('[data-event-title]').textContent(), 'Dienst HO
 await rows.nth(4).locator('input').fill('M1');
 assert.match(await page.locator('[data-summary]').textContent(), /^\d+ shifts$/, 'checked cell no longer counts');
 
+// Saving shows that it's busy: record the button right after the submit, read it on the next page.
+await page.evaluate(() => {
+    const form = document.getElementById('review');
+    form.addEventListener('submit', () => setTimeout(() => {
+        const button = document.querySelector('button[form=review]');
+        sessionStorage.busy = JSON.stringify({ text: button.textContent.trim(), busy: button.getAttribute('aria-busy'), disabled: button.disabled, spinner: !!button.querySelector('.animate-spin') });
+    }));
+});
 await page.getByRole('button', { name: 'Save shifts' }).click();
+await page.waitForURL(BASE + '/');
+assert.deepEqual(JSON.parse(await page.evaluate(() => sessionStorage.busy)), { text: 'Saving…', busy: 'true', disabled: true, spinner: true });
 await page.getByText(/\d+ shifts saved\./).waitFor();
 await page.getByRole('heading', { name: 'Add them to your calendar' }).waitFor();
 const icsHref = await page.getByRole('link', { name: 'Add to calendar' }).getAttribute('href');

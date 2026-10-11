@@ -18,7 +18,8 @@
             <x-button :href="route('home')" class="mt-3">Try again</x-button>
         </div>
     @else
-        <form method="POST" action="{{ route('scans.save', $scan) }}" id="review" class="grid gap-5">
+        <form method="POST" action="{{ route('scans.save', $scan) }}" id="review" class="grid gap-5"
+            data-busy="{{ \App\Calendar\GoogleCalendar::connected() ? 'Saving to Google Calendar…' : 'Saving…' }}">
             @csrf
             <div class="flex items-start justify-between gap-3">
                 <div class="grid min-w-0 gap-1">

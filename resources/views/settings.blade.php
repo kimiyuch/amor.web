@@ -1,5 +1,6 @@
 <x-layout title="Settings · Amor">
-    <form method="POST" action="{{ route('settings.update') }}" id="settings" class="grid">
+    <form method="POST" action="{{ route('settings.update') }}" id="settings" class="grid"
+        data-busy="{{ $googleConnected ? 'Saving and updating Google Calendar…' : 'Saving…' }}">
         @csrf
         @method('PUT')
 
