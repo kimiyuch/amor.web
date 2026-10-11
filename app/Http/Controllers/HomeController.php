@@ -23,9 +23,8 @@ class HomeController extends Controller
         return view('home', [
             'person' => Setting::person(),
             'upcoming' => $upcoming,
-            // Saved shifts only reach a calendar app that subscribed to the feed.
-            'needsSubscribing' => Shift::exists() && ! Setting::feedSubscribed(),
-            'webcalUrl' => Setting::webcalUrl(),
+            // Right after saving: offer the roster's shifts as a file to add to a calendar.
+            'savedScan' => Scan::find(session('saved_scan')),
             'openScan' => in_array($latest?->status, ['queued', 'reading', 'read'], true) ? $latest : null,
         ]);
     }

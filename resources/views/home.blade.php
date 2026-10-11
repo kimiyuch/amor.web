@@ -7,15 +7,14 @@
             </p>
         @endif
 
-        @if ($needsSubscribing)
-            <section class="grid gap-3 rounded-2xl bg-sky-100 p-4 dark:bg-sky-300/12" aria-labelledby="subscribe-heading">
+        @if ($savedScan)
+            <section class="grid gap-3 rounded-2xl bg-sky-100 p-4 dark:bg-sky-300/12" aria-labelledby="add-heading">
                 <div class="grid gap-1">
-                    <h2 id="subscribe-heading" class="font-display text-lg font-semibold">One more step: add Amor to your calendar</h2>
-                    <p class="text-pretty">Your shifts are saved in Amor. Subscribe once, and your calendar shows them, and every roster you save from now on.</p>
+                    <h2 id="add-heading" class="font-display text-lg font-semibold">Add them to your calendar</h2>
+                    <p class="text-pretty">Open the file, tap <strong class="font-semibold">Add All</strong> and pick your calendar.</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <x-button :href="$webcalUrl" icon="calendar-days">Subscribe on iPhone or Mac</x-button>
-                    <a href="{{ route('settings') }}#calendar" class="font-semibold text-sky-700 underline decoration-sky-700/30 underline-offset-3 dark:text-sky-300 dark:decoration-sky-300/30">Google Calendar</a>
+                <div>
+                    <x-button :href="route('scans.ics', $savedScan)" icon="calendar-days">Add to calendar</x-button>
                 </div>
             </section>
         @endif

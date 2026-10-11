@@ -63,6 +63,7 @@ class ScanTest extends TestCase
         $scan = $this->scan('Nobody Here');
         $this->signedIn()->get("/scans/{$scan->id}")->assertOk()->assertSee('isn\'t in this roster', false)->assertSee('Keller Sara');
         $this->signedIn()->post("/scans/{$scan->id}/save")->assertNotFound();
+        $this->signedIn()->get("/scans/{$scan->id}/shifts.ics")->assertNotFound();
     }
 
     public function test_saving_replaces_the_shifts_of_the_period(): void
@@ -77,12 +78,15 @@ class ScanTest extends TestCase
             ->assertRedirect('/')
             ->assertSessionHas('status', '24 shifts saved.');
 
-        // Until a calendar app fetched the feed, the home page asks to subscribe.
-        $this->signedIn()->get('/')->assertSee('One more step')->assertSee('webcal://', false);
-        $this->get('/feed/'.Setting::feedToken().'.ics')->assertOk();
-        $this->signedIn()->get('/')->assertDontSee('One more step');
-        $this->signedIn()->post("/scans/{$scan->id}/save", ['codes' => $codes])
-            ->assertSessionHas('status', fn ($s) => str_starts_with($s, '24 shifts saved. Your calendar shows them'));
+        // Right after saving, the home page offers the shifts as a file to add to a calendar.
+        $this->signedIn()->withSession(['saved_scan' => $scan->id])->get('/')
+            ->assertSee('Add them to your calendar')
+            ->assertSee(route('scans.ics', $scan), false);
+        $ics = $this->signedIn()->get("/scans/{$scan->id}/shifts.ics")->assertOk();
+        $this->assertStringStartsWith('text/calendar', $ics->headers->get('Content-Type'));
+        $this->assertStringContainsString('filename="dienste-2026-12-01-2027-01-03.ics"', $ics->headers->get('Content-Disposition'));
+        $this->assertSame(24, substr_count($ics->getContent(), 'BEGIN:VEVENT'));
+        $this->assertStringNotContainsString('DTSTART;VALUE=DATE:20261130', $ics->getContent(), 'only this roster\'s period');
 
         $this->assertSame('saved', $scan->fresh()->status);
         $this->assertSame('HO', Shift::whereDate('date', '2026-12-02')->value('code'));

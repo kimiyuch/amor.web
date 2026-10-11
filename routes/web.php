@@ -21,6 +21,7 @@ Route::middleware('password')->group(function () {
     Route::get('/scans/{scan}/status', [ScanController::class, 'status'])->name('scans.status');
     Route::get('/scans/{scan}/row.jpg', [ScanController::class, 'strip'])->name('scans.strip');
     Route::post('/scans/{scan}/save', [ScanController::class, 'save'])->name('scans.save');
+    Route::get('/scans/{scan}/shifts.ics', [ScanController::class, 'ics'])->name('scans.ics');
 
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');

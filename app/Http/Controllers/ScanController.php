@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Calendar\IcsFeed;
 use App\Calendar\ShiftCalendar;
 use App\Jobs\ReadRoster;
 use App\Models\Scan;
@@ -97,8 +98,24 @@ class ScanController extends Controller
         $shifts = ShiftCalendar::fromDatabase()->events(Shift::whereBetween('date', [min($dates), max($dates)])->get())->count();
         $saved = $shifts === 1 ? '1 shift saved.' : "{$shifts} shifts saved.";
 
-        return redirect()->route('home')->with('status', Setting::feedSubscribed()
-            ? "{$saved} Your calendar shows them the next time it checks, usually within an hour."
-            : $saved);
+        return redirect()->route('home')
+            ->with('status', $saved)
+            ->with('saved_scan', $scan->id);
+    }
+
+    /**
+     * The saved shifts of this roster as a file to import into an existing calendar
+     * (on iPhone: Add All, then pick the calendar).
+     */
+    public function ics(Scan $scan)
+    {
+        abort_unless($scan->status === 'saved', 404);
+        [$from, $to] = [min(array_column($scan->days(), 'date')), max(array_column($scan->days(), 'date'))];
+        $shifts = Shift::whereBetween('date', [$from, $to])->orderBy('date')->get();
+        $events = ShiftCalendar::fromDatabase()->events($shifts);
+
+        return response(IcsFeed::build($events, (string) config('amor.timezone'), 'Dienste'))
+            ->header('Content-Type', 'text/calendar; charset=utf-8')
+            ->header('Content-Disposition', "inline; filename=\"dienste-{$from}-{$to}.ics\"");
     }
 }

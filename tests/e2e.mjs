@@ -72,8 +72,11 @@ assert.match(await page.locator('[data-summary]').textContent(), /^\d+ shifts$/,
 
 await page.getByRole('button', { name: 'Save shifts' }).click();
 await page.getByText(/\d+ shifts saved\./).waitFor();
-await page.getByRole('heading', { name: 'One more step: add Amor to your calendar' }).waitFor();
-assert.match(await page.getByRole('link', { name: 'Subscribe on iPhone or Mac' }).getAttribute('href'), /^webcal:\/\/.+\/feed\/.+\.ics$/);
+await page.getByRole('heading', { name: 'Add them to your calendar' }).waitFor();
+const icsHref = await page.getByRole('link', { name: 'Add to calendar' }).getAttribute('href');
+const icsResponse = await context.request.get(icsHref);
+assert.match(icsResponse.headers()['content-type'], /^text\/calendar/);
+assert.ok((await icsResponse.text()).split('BEGIN:VEVENT').length > 10, 'the file has the saved shifts');
 await page.getByRole('heading', { name: 'Coming up' }).waitFor();
 await page.screenshot({ path: shots + '5-home.png', fullPage: true });
 
