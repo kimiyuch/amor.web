@@ -38,6 +38,18 @@ class Setting extends Model
         return (string) static::get('person', '');
     }
 
+    /** Whether a calendar app has fetched the feed yet, i.e. someone subscribed to it. */
+    public static function feedSubscribed(): bool
+    {
+        return static::get('feed_fetched_at') !== null;
+    }
+
+    /** The webcal:// link that opens the subscribe dialog on iPhone and Mac. */
+    public static function webcalUrl(): string
+    {
+        return preg_replace('/^https?:/', 'webcal:', route('feed', static::feedToken()));
+    }
+
     /** The secret part of the calendar feed URL, created on first use. */
     public static function feedToken(): string
     {

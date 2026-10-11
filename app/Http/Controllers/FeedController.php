@@ -12,6 +12,10 @@ class FeedController extends Controller
     public function __invoke(string $token)
     {
         abort_unless(hash_equals(Setting::feedToken(), $token), 404);
+        // Remembered so Amor can stop asking to subscribe; written at most every few minutes.
+        if (now()->subMinutes(10)->toIso8601String() > (string) Setting::get('feed_fetched_at', '')) {
+            Setting::put('feed_fetched_at', now()->toIso8601String());
+        }
 
         $shifts = Shift::where('date', '>=', today()->subYear())->orderBy('date')->get();
         $events = ShiftCalendar::fromDatabase()->events($shifts);

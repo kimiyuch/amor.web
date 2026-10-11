@@ -48,7 +48,7 @@ class ScanTest extends TestCase
             ->assertSee('Muster Anna (4711)')
             ->assertSee('01.12.2026 – 03.01.2027')
             ->assertSee('Check on the photo')
-            ->assertSee('Add to calendar');
+            ->assertSee('Save shifts');
         $this->signedIn()->get("/scans/{$scan->id}/row.jpg")->assertOk();
         $this->signedIn()->withCredentials()->getJson("/scans/{$scan->id}/status")->assertJson(['status' => 'read']);
     }
@@ -75,7 +75,14 @@ class ScanTest extends TestCase
 
         $this->signedIn()->post("/scans/{$scan->id}/save", ['codes' => $codes])
             ->assertRedirect('/')
-            ->assertSessionHas('status');
+            ->assertSessionHas('status', '24 shifts saved.');
+
+        // Until a calendar app fetched the feed, the home page asks to subscribe.
+        $this->signedIn()->get('/')->assertSee('One more step')->assertSee('webcal://', false);
+        $this->get('/feed/'.Setting::feedToken().'.ics')->assertOk();
+        $this->signedIn()->get('/')->assertDontSee('One more step');
+        $this->signedIn()->post("/scans/{$scan->id}/save", ['codes' => $codes])
+            ->assertSessionHas('status', fn ($s) => str_starts_with($s, '24 shifts saved. Your calendar shows them'));
 
         $this->assertSame('saved', $scan->fresh()->status);
         $this->assertSame('HO', Shift::whereDate('date', '2026-12-02')->value('code'));

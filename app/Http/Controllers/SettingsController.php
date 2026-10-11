@@ -18,7 +18,8 @@ class SettingsController extends Controller
             'person' => Setting::person(),
             'codes' => ShiftCode::orderBy('code')->get(),
             'feedUrl' => $feed,
-            'webcalUrl' => preg_replace('/^https?:/', 'webcal:', $feed),
+            'webcalUrl' => Setting::webcalUrl(),
+            'subscribed' => Setting::feedSubscribed(),
         ]);
     }
 
@@ -61,6 +62,7 @@ class SettingsController extends Controller
     public function resetFeed()
     {
         Setting::put('feed_token', Str::random(32));
+        Setting::put('feed_fetched_at', null);
 
         return redirect()->route('settings')->with('status', 'New calendar link created. Subscribe again with it.');
     }

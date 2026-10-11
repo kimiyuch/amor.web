@@ -35,6 +35,20 @@ await page.getByRole('button', { name: 'Read shifts' }).waitFor();
 await page.getByLabel('Name in the roster').fill('Anna Muster');
 await page.locator('[data-photo-input]').setInputFiles(fixture);
 await page.locator('[data-photo-preview]').waitFor();
+const previewSize = () => page.locator('[data-photo-preview]').evaluate((img) => [img.naturalWidth, img.naturalHeight]);
+await page.waitForFunction(() => document.querySelector('[data-photo-preview]').naturalWidth > 0);
+const [w, h] = await previewSize();
+assert.ok(w > h, 'the fixture is landscape');
+await page.getByRole('button', { name: 'Rotate' }).click();
+await page.waitForFunction(([w]) => document.querySelector('[data-photo-preview]').naturalHeight === w, [w]);
+assert.deepEqual(await previewSize(), [h, w], 'rotated by 90°');
+assert.deepEqual(await page.locator('[data-photo-input]').evaluate((i) => [i.files.length, i.files[0].type]), [1, 'image/jpeg']);
+await page.screenshot({ path: shots + '2-photo-rotated.png' });
+for (let i = 0; i < 3; i++) {
+    await page.getByRole('button', { name: 'Rotate' }).click();
+    await page.waitForFunction(() => !document.querySelector('[data-photo-rotate]').disabled);
+}
+assert.deepEqual(await previewSize(), [w, h], 'back upright after four turns');
 await page.screenshot({ path: shots + '2-photo.png' });
 await page.getByRole('button', { name: 'Read shifts' }).click();
 await page.getByRole('heading', { name: 'Reading the roster' }).waitFor();
@@ -56,8 +70,10 @@ assert.equal(await third.locator('[data-event-title]').textContent(), 'Dienst HO
 await rows.nth(4).locator('input').fill('M1');
 assert.match(await page.locator('[data-summary]').textContent(), /^\d+ shifts$/, 'checked cell no longer counts');
 
-await page.getByRole('button', { name: 'Add to calendar' }).click();
-await page.getByText(/shifts are in your calendar\./).waitFor();
+await page.getByRole('button', { name: 'Save shifts' }).click();
+await page.getByText(/\d+ shifts saved\./).waitFor();
+await page.getByRole('heading', { name: 'One more step: add Amor to your calendar' }).waitFor();
+assert.match(await page.getByRole('link', { name: 'Subscribe on iPhone or Mac' }).getAttribute('href'), /^webcal:\/\/.+\/feed\/.+\.ics$/);
 await page.getByRole('heading', { name: 'Coming up' }).waitFor();
 await page.screenshot({ path: shots + '5-home.png', fullPage: true });
 

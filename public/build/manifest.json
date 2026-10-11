@@ -8,7 +8,7 @@
     "src": "_fonts-CjiwerTw.css"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CM01t_H2.css",
+    "file": "assets/app-3VKikz_p.css",
     "name": "app",
     "names": [
       "app.css"
@@ -17,7 +17,7 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BkyBV3qM.js",
+    "file": "assets/app-BOlRj4tq.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

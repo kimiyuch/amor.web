@@ -1,4 +1,4 @@
-// ---------- scan form: photo preview, and a smaller JPEG before uploading ----------
+// ---------- scan form: photo preview, rotation, and a smaller JPEG before uploading ----------
 
 const MAX_UPLOAD_SIDE = 4000; // plenty for the zoom tool, and a fraction of a phone photo's size
 
@@ -6,39 +6,72 @@ const scanForm = document.querySelector('[data-scan-form]');
 if (scanForm) {
     const input = scanForm.querySelector('[data-photo-input]');
     const preview = scanForm.querySelector('[data-photo-preview]');
+    const rotateButton = scanForm.querySelector('[data-photo-rotate]');
+    let photo = null; // { bitmap, original file }
+    let rotation = 0; // degrees clockwise
+    let rendering = Promise.resolve();
+
+    // Draws the photo upright, at most MAX_UPLOAD_SIDE, as the JPEG that gets uploaded.
+    // HEIC and huge photos become a JPEG the server can read.
+    const render = async () => {
+        const { bitmap } = photo;
+        const scale = Math.min(1, MAX_UPLOAD_SIDE / Math.max(bitmap.width, bitmap.height));
+        const w = Math.round(bitmap.width * scale);
+        const h = Math.round(bitmap.height * scale);
+        const sideways = rotation % 180 !== 0;
+        const canvas = Object.assign(document.createElement('canvas'), { width: sideways ? h : w, height: sideways ? w : h });
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.drawImage(bitmap, -w / 2, -h / 2, w, h);
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+        const transfer = new DataTransfer();
+        transfer.items.add(new File([blob], 'roster.jpg', { type: 'image/jpeg' }));
+        input.files = transfer.files;
+        URL.revokeObjectURL(preview.src);
+        preview.src = URL.createObjectURL(blob);
+    };
 
     input.addEventListener('change', async () => {
         const file = input.files?.[0];
-        if (!file) return;
-        preview.src = URL.createObjectURL(file);
+        if (!file || file === photo?.converted) return;
+        rotation = 0;
         preview.hidden = false;
         scanForm.querySelector('[data-photo-empty]').hidden = true;
         scanForm.querySelector('[data-photo-change]').hidden = false;
-
-        // Converts HEIC and huge photos to a JPEG the server can read; keeps the original if that fails.
         try {
-            const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-            const scale = Math.min(1, MAX_UPLOAD_SIDE / Math.max(bitmap.width, bitmap.height));
-            const canvas = Object.assign(document.createElement('canvas'), {
-                width: Math.round(bitmap.width * scale),
-                height: Math.round(bitmap.height * scale),
-            });
-            canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-            if (blob && (blob.size < file.size || file.type !== 'image/jpeg')) {
-                const transfer = new DataTransfer();
-                transfer.items.add(new File([blob], 'roster.jpg', { type: 'image/jpeg' }));
-                input.files = transfer.files;
-            }
+            photo = { bitmap: await createImageBitmap(file, { imageOrientation: 'from-image' }) };
+            rendering = render();
+            await rendering;
+            photo.converted = input.files[0];
+            rotateButton.hidden = false;
         } catch (err) {
+            // The browser can't decode it; upload the original and let the server try.
             console.warn('Uploading the original photo:', err);
+            photo = null;
+            rotateButton.hidden = true;
+            preview.src = URL.createObjectURL(file);
         }
     });
 
-    scanForm.addEventListener('submit', () => {
+    rotateButton.addEventListener('click', async () => {
+        if (!photo) return;
+        rotation = (rotation + 90) % 360;
+        rotateButton.disabled = true;
+        rendering = render();
+        await rendering;
+        photo.converted = input.files[0];
+        rotateButton.disabled = false;
+    });
+
+    scanForm.addEventListener('submit', async (event) => {
         const button = scanForm.querySelector('[data-scan-submit]');
         button.disabled = true;
         button.lastChild.textContent = 'Uploading…';
+        // Upload the photo the way it is shown, also when a rotation is still being drawn.
+        event.preventDefault();
+        await rendering.catch(() => {});
+        scanForm.submit();
     });
 }
 

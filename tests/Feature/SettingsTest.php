@@ -50,6 +50,7 @@ class SettingsTest extends TestCase
         $old = Setting::feedToken();
         $this->signedIn()->post('/settings/feed')->assertRedirect('/settings');
         $this->assertNotSame($old, Setting::feedToken());
+        $this->assertFalse(Setting::feedSubscribed(), 'the new link has no subscribers yet');
         $this->get("/feed/{$old}.ics")->assertNotFound();
     }
 }

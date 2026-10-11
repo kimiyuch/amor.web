@@ -27,6 +27,9 @@
         <section id="calendar" class="grid gap-3 border-t border-sky-900/10 py-6 dark:border-white/8">
             <h2 class="font-display text-[1.0625rem] font-semibold">Calendar</h2>
             <p class="text-pretty">Subscribe once, and every roster you save appears in your calendar by itself. Shifts removed from a roster disappear too.</p>
+            @if ($subscribed)
+                <p class="flex gap-2 text-leaf-800 dark:text-leaf-200"><x-heroicon-m-check-circle class="h-lh w-5 shrink-0" />A calendar is subscribed.</p>
+            @endif
             <div class="flex flex-wrap gap-2">
                 <x-button :href="$webcalUrl" variant="secondary" size="sm" icon="calendar-days">Subscribe on iPhone or Mac</x-button>
                 <x-button variant="secondary" size="sm" icon="clipboard-document" data-copy="{{ $feedUrl }}">Copy link</x-button>

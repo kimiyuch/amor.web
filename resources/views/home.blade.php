@@ -7,6 +7,19 @@
             </p>
         @endif
 
+        @if ($needsSubscribing)
+            <section class="grid gap-3 rounded-2xl bg-sky-100 p-4 dark:bg-sky-300/12" aria-labelledby="subscribe-heading">
+                <div class="grid gap-1">
+                    <h2 id="subscribe-heading" class="font-display text-lg font-semibold">One more step: add Amor to your calendar</h2>
+                    <p class="text-pretty">Your shifts are saved in Amor. Subscribe once, and your calendar shows them, and every roster you save from now on.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <x-button :href="$webcalUrl" icon="calendar-days">Subscribe on iPhone or Mac</x-button>
+                    <a href="{{ route('settings') }}#calendar" class="font-semibold text-sky-700 underline decoration-sky-700/30 underline-offset-3 dark:text-sky-300 dark:decoration-sky-300/30">Google Calendar</a>
+                </div>
+            </section>
+        @endif
+
         @if ($openScan)
             <a href="{{ route('scans.show', $openScan) }}" class="flex items-center justify-between gap-3 rounded-xl bg-sky-100 px-3.5 py-3 hover:bg-sky-200 dark:bg-sky-300/12 dark:hover:bg-sky-300/18">
                 <span>{{ $openScan->isPending() ? 'A roster is being read.' : 'A roster is read and waiting for you to check it.' }}</span>
@@ -33,6 +46,7 @@
 
             <div class="grid gap-2">
                 <span id="photo-heading" class="font-semibold">Roster photo</span>
+                <div class="relative">
                 <label class="relative grid min-h-36 cursor-pointer overflow-hidden rounded-2xl bg-sky-50 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-sky-500 sm:min-h-48 dark:bg-white/5" aria-labelledby="photo-heading">
                     <input name="photo" type="file" accept="image/*" required class="sr-only" data-photo-input>
                     <span class="grid place-content-center justify-items-center gap-1 rounded-2xl border-[1.5px] border-dashed border-sky-500/50 p-4 text-center sm:p-6" data-photo-empty>
@@ -43,6 +57,13 @@
                     <img alt="Roster photo" class="max-h-[52vh] w-full object-contain" hidden data-photo-preview>
                     <span class="absolute right-2.5 bottom-2.5 rounded-full bg-sky-950/70 px-3 py-1.5 text-[0.9375rem] font-semibold text-white backdrop-blur" hidden data-photo-change>Change photo</span>
                 </label>
+                {{-- Outside the label, so tapping it doesn't open the photo picker. --}}
+                <button type="button" class="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-sky-950/70 py-1.5 pr-3 pl-2 text-[0.9375rem] font-semibold text-white backdrop-blur focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500" hidden data-photo-rotate>
+                    <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
+                    <x-heroicon-m-arrow-uturn-right class="size-5 shrink-0" />
+                    Rotate
+                </button>
+                </div>
                 @error('photo')
                     <p class="text-peach-700 dark:text-peach-300">{{ $message }}</p>
                 @enderror

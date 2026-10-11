@@ -97,7 +97,7 @@
             <div class="sticky bottom-0 z-10 bg-white/90 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-1px_0_rgb(20_38_58/0.08),0_-12px_32px_-16px_rgb(20_38_58/0.25)] backdrop-blur-lg dark:bg-sky-950/90 dark:shadow-[0_-1px_0_rgb(255_255_255/0.08)]">
                 <div class="mx-auto max-w-xl">
                     <x-button type="submit" form="review" icon="calendar-days" class="w-full">
-                        {{ $scan->status === 'saved' ? 'Save changes' : 'Add to calendar' }}
+                        {{ $scan->status === 'saved' ? 'Save changes' : 'Save shifts' }}
                     </x-button>
                 </div>
             </div>

@@ -95,9 +95,10 @@ class ScanController extends Controller
         });
 
         $shifts = ShiftCalendar::fromDatabase()->events(Shift::whereBetween('date', [min($dates), max($dates)])->get())->count();
+        $saved = $shifts === 1 ? '1 shift saved.' : "{$shifts} shifts saved.";
 
-        return redirect()->route('home')->with('status', $shifts === 1
-            ? '1 shift is in your calendar.'
-            : "{$shifts} shifts are in your calendar.");
+        return redirect()->route('home')->with('status', Setting::feedSubscribed()
+            ? "{$saved} Your calendar shows them the next time it checks, usually within an hour."
+            : $saved);
     }
 }
