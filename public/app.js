@@ -1,7 +1,7 @@
 // UI and settings.
 if (new URLSearchParams(location.search).has("mock")) await import("./mock.js");
 
-import { buildIcs, deliverIcs, describeEvent, eventFor, findCode, normalizeCode, syncToGoogle } from "./calendar.js";
+import { buildIcs, deliverIcs, eventFor, findCode, normalizeCode, syncToGoogle } from "./calendar.js";
 
 const extractModule = () => import("./extract.js");
 const $ = (id) => document.getElementById(id);
@@ -18,6 +18,7 @@ const DEFAULTS = {
   googleClientId: "",
   calendarId: "primary",
   timeZone: "Europe/Zurich",
+  removeEmpty: true,
   codes: DEFAULT_CODES,
 };
 
@@ -56,10 +57,25 @@ function formatDate(date) {
   return `${wd} ${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.`;
 }
 const formatLong = (date) => date.split("-").reverse().join(".");
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 function show(el, visible) {
   el.hidden = !visible;
 }
+
+/** Switches between the scan step and the result step. */
+function setView(view) {
+  show($("scan"), view === "scan");
+  show($("result"), view === "result");
+  show($("action-bar"), view === "result");
+  window.scrollTo({ top: 0 });
+}
+
+const WARNING_ICON = `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 4a.75.75 0 0 1 .75.75v3a.75.75 0 1 1-1.5 0v-3A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>`;
 
 // ---------- scan screen ----------
 
@@ -89,8 +105,9 @@ $("photo").addEventListener("change", async () => {
     state.previewUrl = URL.createObjectURL(file);
     $("preview").src = state.previewUrl;
     show($("preview"), true);
+    show($("photo-empty"), false);
+    show($("photo-change"), true);
     show($("intro"), false);
-    $("photo-label").textContent = "Choose another photo";
   } catch (err) {
     showError("This photo could not be opened. Try a JPEG or PNG.");
     console.error(err);
@@ -127,15 +144,14 @@ $("read").addEventListener("click", async () => {
     });
     console.info(`Read in ${turns} turns, ${usage.input} input / ${usage.output} output tokens`);
     if (!result.person_found) {
-      showError(`"${person}" was not found in this roster.${result.notes ? ` ${result.notes}` : ""}`);
-      show($("result"), false);
+      showError(`“${person}” isn't in this roster.${result.notes ? ` ${result.notes}` : ""}`);
       return;
     }
     state.person = person;
     state.result = result;
     addUnknownCodes(result.days);
     await renderResult();
-    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+    setView("result");
   } catch (err) {
     if (err.name !== "AbortError") {
       showError(err.message || String(err));
@@ -149,6 +165,7 @@ $("read").addEventListener("click", async () => {
 });
 
 $("cancel").addEventListener("click", () => state.abort?.abort());
+$("new-scan").addEventListener("click", () => setView("scan"));
 
 function addUnknownCodes(days) {
   let added = false;
@@ -172,7 +189,8 @@ async function renderResult() {
   $("result-title").textContent = r.row_label || state.person;
   $("result-period").textContent =
     r.period_start && r.period_end ? `${formatLong(r.period_start)} – ${formatLong(r.period_end)}` : "";
-  $("result-notes").textContent = r.notes;
+  $("result-notes").innerHTML = WARNING_ICON;
+  $("result-notes").append(Object.assign(document.createElement("span"), { textContent: r.notes }));
   show($("result-notes"), Boolean(r.notes?.trim()));
 
   await renderStrip(r.row_box);
@@ -190,8 +208,8 @@ async function renderResult() {
       tbody.append(heading);
     }
     const tr = document.createElement("tr");
-    tr.classList.toggle("uncertain", day.uncertain);
     tr.classList.toggle("weekend", [0, 6].includes(new Date(day.date).getUTCDay()));
+    tr.classList.toggle("today", day.date === today());
     const input = Object.assign(document.createElement("input"), {
       type: "text",
       value: day.code,
@@ -202,11 +220,14 @@ async function renderResult() {
     input.addEventListener("input", () => {
       r.days[i].code = input.value.trim();
       r.days[i].uncertain = false;
-      tr.classList.remove("uncertain");
       updateRow(i);
+      updateSummary();
     });
     const date = Object.assign(document.createElement("td"), { className: "date" });
-    date.append(Object.assign(document.createElement("b"), { textContent: weekday(day.date) }), formatDay(day.date));
+    date.append(
+      Object.assign(document.createElement("b"), { textContent: weekday(day.date) }),
+      Object.assign(document.createElement("time"), { dateTime: day.date, textContent: formatDay(day.date) }),
+    );
     tr.append(
       date,
       Object.assign(document.createElement("td"), { className: "code" }),
@@ -217,26 +238,50 @@ async function renderResult() {
     state.rows.push(tr);
     updateRow(i);
   }
-  show($("uncertain-hint"), r.days.some((d) => d.uncertain));
-  show($("google"), Boolean(settings.googleClientId));
+  updateSummary();
+  show($("google-sync"), Boolean(settings.googleClientId));
   show($("android-hint"), /Android/i.test(navigator.userAgent));
   show($("sync-status"), false);
-  show($("result"), true);
+}
+
+function updateSummary() {
+  const days = state.result.days;
+  const shifts = days.filter((d) => eventFor(d, settings, state.person)).length;
+  const unsure = days.filter((d) => d.uncertain).length;
+  $("result-summary").textContent = plural(shifts, "shift", "shifts") + (unsure ? `, ${unsure} to check` : "");
 }
 
 /** Shows the resulting event of day i and colors its code by kind. */
 function updateRow(i) {
-  const event = eventFor(state.result.days[i], settings, state.person);
+  const day = state.result.days[i];
+  const event = eventFor(day, settings, state.person);
   const tr = state.rows[i];
-  tr.classList.toggle("timed", Boolean(event && !event.allDay));
-  tr.classList.toggle("allday", Boolean(event?.allDay));
-  tr.querySelector(".event").textContent = describeEvent(event);
+  const kind = event ? (event.allDay ? "allday" : "timed") : day.code.trim() ? "skipped" : "free";
+  for (const k of ["allday", "timed", "skipped", "free"]) tr.classList.toggle(k, k === kind);
+  tr.classList.toggle("uncertain", day.uncertain);
+
+  const title = { allday: event?.title, timed: event?.title, skipped: "Not added", free: "Free" }[kind];
+  let when = "";
+  if (kind === "allday") when = "All day";
+  if (kind === "timed") {
+    const nextDay = event.end.slice(0, 10) !== event.date;
+    when = `${event.start.slice(11, 16)} – ${event.end.slice(11, 16)}${nextDay ? " next day" : ""}`;
+  }
+  const cell = tr.querySelector(".event");
+  cell.replaceChildren(Object.assign(document.createElement("div"), { className: "event-title", textContent: title }));
+  if (when) cell.append(Object.assign(document.createElement("div"), { className: "event-when", textContent: when }));
+  if (day.uncertain) {
+    const note = Object.assign(document.createElement("div"), { className: "check-note", innerHTML: WARNING_ICON });
+    note.append("Check on the photo");
+    cell.append(note);
+  }
 }
 
 function refreshPreviews() {
   if (!state.result) return;
   state.result.days.forEach((_, i) => updateRow(i));
-  show($("google"), Boolean(settings.googleClientId));
+  updateSummary();
+  show($("google-sync"), Boolean(settings.googleClientId));
 }
 
 async function renderStrip(rowBox) {
@@ -260,8 +305,8 @@ $("ics").addEventListener("click", async () => {
   if (!count) return syncStatus("No shifts to add.");
   const period = [r.period_start, r.period_end].filter(Boolean).join("_") || "shifts";
   const outcome = await deliverIcs(text, `dienstplan-${period}.ics`);
-  if (outcome === "downloaded") syncStatus(`Downloaded a file with ${count} events. Open it to add them.`);
-  else if (outcome === "shared") syncStatus(`Shared ${count} events.`);
+  if (outcome === "downloaded") syncStatus(`Downloaded a file with ${plural(count, "event", "events")}. Open it to add them.`);
+  else if (outcome === "shared") syncStatus(`Shared ${plural(count, "event", "events")}.`);
 });
 
 $("google-sync").addEventListener("click", async () => {
@@ -272,10 +317,10 @@ $("google-sync").addEventListener("click", async () => {
       days: state.result.days,
       settings,
       person: state.person,
-      removeEmpty: $("remove-empty").checked,
+      removeEmpty: settings.removeEmpty,
       onProgress: (done, total) => syncStatus(`Saving to Google Calendar… ${done}/${total}`),
     });
-    syncStatus(`${saved} ${saved === 1 ? "event" : "events"} saved${removed ? `, ${removed} removed` : ""}.`);
+    syncStatus(`${plural(saved, "event", "events")} saved${removed ? `, ${removed} removed` : ""}.`);
   } catch (err) {
     syncStatus(err.message || String(err), true);
     console.error(err);
@@ -299,6 +344,7 @@ const FIELDS = ["apiKey", "model", "googleClientId", "calendarId", "timeZone"];
 
 function openSettings() {
   for (const name of FIELDS) form.elements[name].value = settings[name] ?? "";
+  form.elements.removeEmpty.checked = settings.removeEmpty;
   renderCodes();
   dialog.showModal();
 }
@@ -308,6 +354,10 @@ document.querySelectorAll("[data-open-settings]").forEach((b) => b.addEventListe
 
 form.addEventListener("input", (event) => {
   const name = event.target.name;
+  if (name === "removeEmpty") {
+    settings.removeEmpty = event.target.checked;
+    saveSettings();
+  }
   if (!FIELDS.includes(name)) return;
   settings[name] = event.target.value.trim();
   saveSettings();

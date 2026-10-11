@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Amor</title>
   <meta name="description" content="Photograph the duty roster, and every shift goes into your calendar.">
-  <meta name="theme-color" content="#e1f2fc" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#122a40" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#e8f5fd" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d1b2a" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Amor">
@@ -20,141 +20,168 @@
   <script type="module" src="app.js"></script>
 </head>
 <body>
-  <header class="bar">
-    <h1 class="brand"><img src="icons/icon.svg" alt="">Amor</h1>
-    <button id="open-settings" class="icon-button" type="button" aria-label="Settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
-    </button>
-  </header>
+  <div id="app" class="app">
+    <header class="bar">
+      <a href="./" class="brand" aria-label="Homepage">Amor</a>
+      <button id="open-settings" class="icon-button" type="button" aria-label="Settings">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.331 1.652a6.993 6.993 0 0 1 1.929 1.115l1.598-.54a1 1 0 0 1 1.186.447l1.18 2.044a1 1 0 0 1-.205 1.251l-1.267 1.113a7.047 7.047 0 0 1 0 2.228l1.267 1.113a1 1 0 0 1 .206 1.25l-1.18 2.045a1 1 0 0 1-1.187.447l-1.598-.54a6.993 6.993 0 0 1-1.929 1.115l-.33 1.652a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.331-1.652a6.993 6.993 0 0 1-1.929-1.115l-1.598.54a1 1 0 0 1-1.186-.447l-1.18-2.044a1 1 0 0 1 .205-1.251l1.267-1.114a7.05 7.05 0 0 1 0-2.227L1.821 7.773a1 1 0 0 1-.206-1.25l1.18-2.045a1 1 0 0 1 1.187-.447l1.598.54A6.992 6.992 0 0 1 7.51 3.456l.33-1.652ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd"/></svg>
+      </button>
+    </header>
 
-  <main>
-    <section id="scan" class="card">
-      <div id="intro" class="intro">
-        <img src="icons/mascot.svg" alt="" width="148" height="151">
-        <h2>Every shift, straight into your calendar</h2>
-        <p>Photograph the duty roster. Amor finds your row and reads each day.</p>
-      </div>
-
-      <p id="setup-hint" class="hint" hidden>Add your Anthropic API key in <button type="button" class="link" data-open-settings>Settings</button> first.</p>
-
-      <label class="field">
-        <span>Name in the roster</span>
-        <input id="person" type="text" autocomplete="name" autocapitalize="words" placeholder="e.g. Muster Anna" required>
-      </label>
-
-      <label class="photo-button button secondary">
-        <input id="photo" type="file" accept="image/*" hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        <span id="photo-label">Take or choose photo</span>
-      </label>
-
-      <img id="preview" class="preview" alt="Roster photo" hidden>
-
-      <button id="read" class="button primary" type="button" disabled>Read shifts</button>
-
-      <div id="status" class="status" role="status" aria-live="polite" hidden>
-        <img src="icons/mascot.svg" alt="">
-        <span id="status-text"></span>
-        <button id="cancel" type="button" class="link">Cancel</button>
-      </div>
-      <p id="error" class="error" role="alert" hidden></p>
-    </section>
-
-    <section id="result" class="card" hidden>
-      <div class="result-head">
-        <h2 id="result-title"></h2>
-        <p id="result-period" class="period"></p>
-      </div>
-      <p id="result-notes" class="notes" hidden></p>
-
-      <figure class="strip-wrap" id="strip-wrap" hidden>
-        <div class="strip" id="strip"><img id="strip-img" alt="Detected row"></div>
-        <figcaption class="muted">Detected row – scroll sideways to compare.</figcaption>
-      </figure>
-
-      <div class="table-wrap">
-        <table class="days">
-          <tbody id="days"></tbody>
-        </table>
-      </div>
-      <p id="uncertain-hint" class="muted small" hidden><span class="swatch"></span> Hard to read on the photo. Compare with the row above.</p>
-
-      <div class="actions">
-        <button id="ics" class="button primary" type="button">Add to calendar (.ics)</button>
-        <p id="android-hint" class="hint" hidden>The Google Calendar app can't import .ics files. Open the file with Samsung Calendar or another calendar app, import it at calendar.google.com → Settings → Import &amp; export, or use the Google button below.</p>
-
-        <div id="google" class="google" hidden>
-          <button id="google-sync" class="button secondary" type="button">Add to Google Calendar</button>
-          <label class="check">
-            <input id="remove-empty" type="checkbox" checked>
-            <span>Remove previously imported events on days without a shift</span>
-          </label>
+    <main>
+      <!-- Step 1: name and photo -->
+      <section id="scan" class="view">
+        <div id="intro" class="intro">
+          <img src="icons/mascot.svg" alt="" width="140" height="143">
+          <h1>Every shift, straight into your calendar</h1>
+          <p>Photograph the duty roster. Amor finds your row and reads each day.</p>
         </div>
-        <p id="sync-status" class="status-line" role="status" aria-live="polite" hidden></p>
-      </div>
-    </section>
-  </main>
 
-  <dialog id="settings">
+        <p id="setup-hint" class="hint" hidden>To get started, add your Anthropic API key in <button type="button" class="link" data-open-settings>Settings</button>.</p>
+
+        <div class="field">
+          <label for="person">Name in the roster</label>
+          <input id="person" name="person" type="text" autocomplete="name" autocapitalize="words" placeholder="e.g. Muster Anna" required>
+        </div>
+
+        <div class="field">
+          <span class="label" id="photo-heading">Roster photo</span>
+          <div class="photo">
+            <label class="photo-pick" aria-labelledby="photo-heading photo-label">
+              <input id="photo" name="photo" type="file" accept="image/*" class="sr-only">
+              <span id="photo-empty" class="photo-empty">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M1 8a2 2 0 0 1 2-2h.93a2 2 0 0 0 1.664-.89l.812-1.22A2 2 0 0 1 8.07 3h3.86a2 2 0 0 1 1.664.89l.812 1.22A2 2 0 0 0 16.07 6H17a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8Zm13.5 3a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM10 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd"/></svg>
+                <strong id="photo-label">Take or choose a photo</strong>
+                <span>Hold the phone above the printed plan, with the whole grid in view.</span>
+              </span>
+              <img id="preview" alt="Roster photo" hidden>
+              <span id="photo-change" class="photo-change" hidden>Change photo</span>
+            </label>
+
+            <div id="status" class="status" role="status" aria-live="polite" hidden>
+              <img src="icons/mascot.svg" alt="" width="64" height="65">
+              <p id="status-text"></p>
+              <button id="cancel" type="button" class="button secondary small">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <button id="read" class="button primary" type="button" disabled>Read shifts</button>
+        <p id="error" class="error" role="alert" hidden></p>
+      </section>
+
+      <!-- Step 2: check the days, then add them -->
+      <section id="result" class="view" hidden>
+        <div class="result-head">
+          <div class="result-title">
+            <h1 id="result-title"></h1>
+            <p class="meta"><span id="result-period"></span><span id="result-summary"></span></p>
+          </div>
+          <button id="new-scan" class="button secondary small" type="button">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd"/></svg>
+            New scan
+          </button>
+        </div>
+
+        <p id="result-notes" class="notes" hidden></p>
+
+        <figure class="strip-wrap" id="strip-wrap" hidden>
+          <div class="strip" id="strip"><img id="strip-img" alt="The detected row in the photo"></div>
+          <figcaption>Your row in the photo. Scroll sideways to compare.</figcaption>
+        </figure>
+
+        <div class="table-wrap">
+          <table class="days">
+            <thead class="sr-only"><tr><th>Date</th><th>Code</th><th>Event</th></tr></thead>
+            <tbody id="days"></tbody>
+          </table>
+        </div>
+
+        <p id="android-hint" class="hint" hidden>The Google Calendar app can't import .ics files. Open the file with Samsung Calendar or another calendar app, import it at calendar.google.com → Settings → Import &amp; export, or use “Google Calendar” below.</p>
+      </section>
+    </main>
+
+    <div id="action-bar" class="action-bar" hidden>
+      <p id="sync-status" class="sync-status" role="status" aria-live="polite" hidden></p>
+      <div class="action-buttons">
+        <button id="google-sync" class="button secondary" type="button" hidden>Google Calendar</button>
+        <button id="ics" class="button primary" type="button">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clip-rule="evenodd"/></svg>
+          Add to calendar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="settings" aria-labelledby="settings-title">
     <form method="dialog" id="settings-form">
       <header class="dialog-bar">
-        <h2>Settings</h2>
-        <button class="button primary small" value="save">Done</button>
+        <h2 id="settings-title">Settings</h2>
+        <button class="button primary small" type="submit" value="save">Done</button>
       </header>
 
-      <fieldset>
-        <legend>Claude</legend>
-        <label class="field">
-          <span>Anthropic API key</span>
-          <input name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
-        </label>
-        <label class="field">
-          <span>Model</span>
-          <input name="model" type="text" list="models" spellcheck="false" autocapitalize="off">
+      <section class="settings-section">
+        <h3>Claude</h3>
+        <div class="field">
+          <label for="set-api-key">Anthropic API key</label>
+          <input id="set-api-key" name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+        </div>
+        <div class="field">
+          <label for="set-model">Model</label>
+          <input id="set-model" name="model" type="text" list="models" spellcheck="false" autocapitalize="off">
           <datalist id="models">
             <option value="claude-opus-5-5">
             <option value="claude-sonnet-5-5">
             <option value="claude-fable-5-1">
           </datalist>
-        </label>
-      </fieldset>
+        </div>
+      </section>
 
-      <fieldset>
-        <legend>Calendar</legend>
-        <label class="field">
-          <span>Time zone</span>
-          <input name="timeZone" type="text" spellcheck="false" autocapitalize="off" placeholder="Europe/Zurich">
-        </label>
-        <label class="field">
-          <span>Google OAuth client ID <small>(optional)</small></span>
-          <input name="googleClientId" type="text" spellcheck="false" autocapitalize="off" placeholder="….apps.googleusercontent.com">
-        </label>
-        <label class="field">
-          <span>Google calendar ID</span>
-          <input name="calendarId" type="text" spellcheck="false" autocapitalize="off" placeholder="primary">
-        </label>
-      </fieldset>
+      <section class="settings-section">
+        <h3>Calendar</h3>
+        <div class="field">
+          <label for="set-time-zone">Time zone</label>
+          <input id="set-time-zone" name="timeZone" type="text" spellcheck="false" autocapitalize="off" placeholder="Europe/Zurich">
+        </div>
+        <div class="field">
+          <label for="set-client-id">Google OAuth client ID <small>Optional</small></label>
+          <input id="set-client-id" name="googleClientId" type="text" spellcheck="false" autocapitalize="off" placeholder="….apps.googleusercontent.com">
+        </div>
+        <div class="field">
+          <label for="set-calendar-id">Google calendar ID</label>
+          <input id="set-calendar-id" name="calendarId" type="text" spellcheck="false" autocapitalize="off" placeholder="primary">
+        </div>
+        <div class="toggle-row">
+          <label for="remove-empty">Remove previously imported events on days without a shift <small>Google Calendar only.</small></label>
+          <span class="toggle"><input id="remove-empty" name="removeEmpty" type="checkbox" role="switch"><span aria-hidden="true"></span></span>
+        </div>
+      </section>
 
-      <fieldset>
-        <legend>Shift codes</legend>
-        <p class="muted small">Without times a code becomes an all-day event. If the end is before the start, the shift ends the next day. Empty title: “Dienst &lt;code&gt;”.</p>
-        <div id="codes" class="codes"></div>
+      <section class="settings-section">
+        <h3>Shift codes</h3>
+        <p class="muted">Codes without times become all-day events. If the end is before the start, the shift ends the next day. Without a title, the event is called “Dienst” and the code.</p>
+        <div id="codes" class="codes" role="list"></div>
         <button id="add-code" type="button" class="button secondary small">Add code</button>
-      </fieldset>
+      </section>
 
-      <p class="muted small">Everything is stored on this device only. The key is sent only to Anthropic.</p>
+      <p class="muted footnote">Everything is stored on this device only. The key is only sent to Anthropic.</p>
     </form>
   </dialog>
 
   <template id="code-row">
-    <div class="code-row">
-      <input data-k="code" type="text" spellcheck="false" autocapitalize="characters" aria-label="Code" placeholder="Code">
-      <input data-k="title" type="text" aria-label="Title" placeholder="Title (Dienst …)">
-      <button type="button" class="icon-button small" data-remove aria-label="Remove">×</button>
+    <div class="code-row" role="listitem">
+      <input data-k="code" name="code" type="text" spellcheck="false" autocapitalize="characters" aria-label="Code" placeholder="Code">
+      <input data-k="title" name="title" type="text" aria-label="Title" placeholder="Title">
+      <button type="button" class="icon-button remove" data-remove aria-label="Remove code">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"/></svg>
+      </button>
       <div class="times">
-        <label><span>Start</span><input data-k="start" type="time"></label>
-        <label><span>End</span><input data-k="end" type="time"></label>
-        <label class="skip"><input data-k="skip" type="checkbox"><span>Skip</span></label>
+        <label><span>Start</span><input data-k="start" name="start" type="time"></label>
+        <label><span>End</span><input data-k="end" name="end" type="time"></label>
+        <label class="skip">
+          <span class="checkbox"><input data-k="skip" name="skip" type="checkbox"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 8L6 11L11 3.5"/></svg></span>
+          <span>Skip</span>
+        </label>
       </div>
     </div>
   </template>

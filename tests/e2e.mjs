@@ -32,6 +32,7 @@ await page.screenshot({ path: shots + "2-photo.png" });
 
 await page.getByRole("button", { name: "Read shifts" }).click();
 await page.locator("#status").waitFor();
+await page.screenshot({ path: shots + "2b-reading.png" });
 await page.locator("#result").waitFor({ timeout: 30_000 });
 
 const checks = await page.evaluate(() => window.__mock.checks);
@@ -45,11 +46,19 @@ assert.ok(await page.locator("#strip-img").evaluate((img) => img.complete && img
 const codes = await page.evaluate(() => JSON.parse(localStorage.getItem("dienstplan.settings.v1")).codes.map((c) => c.code));
 assert.ok(codes.includes("X7"), "unknown code added to the table");
 await page.screenshot({ path: shots + "3-result.png", fullPage: true });
+await page.screenshot({ path: shots + "3a-result-top.png" });
+await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+await page.screenshot({ path: shots + "3b-result-bottom.png" });
+await page.evaluate(() => window.scrollTo(0, 0));
 
 // Live preview when editing a code
+const eventText = (i) => page.locator("#days tr:not(.month)").nth(i).locator(".event").evaluate((td) => [...td.children].map((c) => c.textContent).join(" | "));
+assert.equal(await eventText(4), "Dienst M1 | All day | Check on the photo");
+assert.match(await page.locator("#result-summary").textContent(), /^\d+ shifts, 1 to check$/);
 const row3 = page.locator("#days tr:not(.month)").nth(2);
 await row3.locator("input").fill("HO");
-assert.equal(await row3.locator(".event").textContent(), "Dienst HO · all day");
+assert.equal(await eventText(2), "Dienst HO | All day");
+assert.ok(await page.locator("#scan").isHidden(), "scan step hidden after reading");
 
 // Shift times in settings → timed and overnight events
 await page.locator("#open-settings").click();
@@ -69,10 +78,11 @@ await (await codeRow("B")).locator('input[data-k="skip"]').check();
 await page.locator('input[name="googleClientId"]').fill("mock.apps.googleusercontent.com");
 await page.screenshot({ path: shots + "4-settings.png" });
 await page.getByRole("button", { name: "Done" }).click();
-await page.locator("#google").waitFor();
-assert.equal(await page.locator("#days tr:not(.month)").nth(0).locator(".event").textContent(), "Dienst 1 · 06:45–15:15");
-assert.equal(await page.locator("#days tr:not(.month)").nth(5).locator(".event").textContent(), "Dienst S1/BD · 20:00–07:30 (+1)");
-assert.equal(await page.locator("#days tr:not(.month)").nth(9).locator(".event").textContent(), "—"); // B skipped
+await page.locator("#google-sync").waitFor();
+assert.equal(await eventText(0), "Dienst 1 | 06:45 – 15:15");
+assert.equal(await eventText(5), "Dienst S1/BD | 20:00 – 07:30 next day");
+assert.equal(await eventText(9), "Not added"); // B skipped
+assert.equal(await eventText(3), "Free");
 
 // .ics: share sheet where files can be shared (WebKit, like iOS), download elsewhere
 const canShareFiles = await page.evaluate(() => Boolean(navigator.canShare?.({ files: [new File(["x"], "a.ics", { type: "text/calendar" })] })));
@@ -81,12 +91,12 @@ if (canShareFiles) {
   await page.evaluate(() => {
     navigator.share = async ({ files }) => { window.__shared = { name: files[0].name, type: files[0].type, text: await files[0].text() }; };
   });
-  await page.getByRole("button", { name: "Add to calendar (.ics)" }).click();
+  await page.getByRole("button", { name: "Add to calendar" }).click();
   const shared = await page.waitForFunction(() => window.__shared).then((h) => h.jsonValue());
   assert.equal(shared.type, "text/calendar");
   ({ name: filename, text: ics } = shared);
 } else {
-  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Add to calendar (.ics)" }).click()]);
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Add to calendar" }).click()]);
   filename = download.suggestedFilename();
   ics = await (await download.createReadStream()).toArray().then((c) => Buffer.concat(c).toString());
 }
@@ -102,13 +112,13 @@ const staleId = await page.evaluate(async () => {
   window.__mock.calendar.set(id, { id, summary: "old" });
   return id;
 });
-await page.getByRole("button", { name: "Add to Google Calendar" }).click();
+await page.getByRole("button", { name: "Google Calendar" }).click();
 await page.getByText(/events saved/).waitFor();
 const status1 = await page.locator("#sync-status").textContent();
 const eventCount = await page.evaluate(() => window.__mock.calendar.size);
 assert.ok(!(await page.evaluate((id) => window.__mock.calendar.has(id), staleId)), "stale event removed");
 assert.match(status1, /^\d+ events saved, 1 removed\.$/);
-await page.getByRole("button", { name: "Add to Google Calendar" }).click();
+await page.getByRole("button", { name: "Google Calendar" }).click();
 await page.waitForFunction(() => /0 removed|saved\.$/.test(document.querySelector("#sync-status").textContent) && !document.querySelector("#google-sync").disabled);
 assert.equal(await page.evaluate(() => window.__mock.calendar.size), eventCount, "re-sync updated, no duplicates");
 const calls = await page.evaluate(() => window.__mock.calls);

@@ -59,13 +59,6 @@ export function eventFor(day, settings, person) {
   return { ...base, allDay: true, start: day.date, end: addDays(day.date, 1) };
 }
 
-export function describeEvent(event) {
-  if (!event) return "—";
-  if (event.allDay) return `${event.title} · all day`;
-  const nextDay = event.end.slice(0, 10) !== event.date ? " (+1)" : "";
-  return `${event.title} · ${event.start.slice(11, 16)}–${event.end.slice(11, 16)}${nextDay}`;
-}
-
 // ---------- Google Calendar ----------
 
 let token = null; // { value, expiresAt }
