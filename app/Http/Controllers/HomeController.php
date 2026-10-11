@@ -50,7 +50,7 @@ class HomeController extends Controller
             return [
                 'date' => $date,
                 'day' => $day->day,
-                'weekday' => $day->locale('en')->isoFormat('dd'),
+                'weekday' => $day->locale('de')->isoFormat('dd'),
                 'inMonth' => $day->month === $month->month,
                 'today' => $day->isToday(),
                 'weekend' => $day->isWeekend(),
@@ -67,7 +67,7 @@ class HomeController extends Controller
 
         return [
             'month' => $month,
-            'title' => $month->locale('en')->isoFormat('MMMM YYYY'),
+            'title' => $month->locale('de')->isoFormat('MMMM YYYY'),
             'weeks' => $days->chunk(7),
             'empty' => $empty,
             'previous' => $month->copy()->subMonth()->format('Y-m'),

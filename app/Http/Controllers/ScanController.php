@@ -29,14 +29,15 @@ class ScanController extends Controller
             'person' => 'required|string|max:100',
             'photo' => 'required|image|max:30720',
         ], [
-            'photo.required' => 'Choose a photo of the roster.',
-            'photo.image' => 'This photo could not be opened. Try a JPEG or PNG.',
-            'photo.max' => 'This photo is too large (at most 30 MB).',
+            'person.required' => 'Gib deinen Namen ein, wie er im Dienstplan steht.',
+            'photo.required' => 'Wähle ein Foto des Dienstplans.',
+            'photo.image' => 'Dieses Foto lässt sich nicht öffnen. Versuch es mit einem JPEG oder PNG.',
+            'photo.max' => 'Dieses Foto ist zu gross (höchstens 30 MB).',
         ]);
 
         Setting::put('person', trim($data['person']));
         $path = $request->file('photo')->storeAs('scans', Str::uuid().'.'.$request->file('photo')->extension(), 'local');
-        $scan = Scan::create(['person' => trim($data['person']), 'photo_path' => $path, 'status_text' => 'Waiting to start…']);
+        $scan = Scan::create(['person' => trim($data['person']), 'photo_path' => $path, 'status_text' => 'Gleich geht es los…']);
         ReadRoster::dispatch($scan);
 
         return redirect()->route('scans.show', $scan);
@@ -103,13 +104,13 @@ class ScanController extends Controller
         });
 
         $shifts = ShiftCalendar::fromDatabase()->events(Shift::whereBetween('date', [min($dates), max($dates)])->get())->count();
-        $saved = $shifts === 1 ? '1 shift saved' : "{$shifts} shifts saved";
+        $saved = $shifts === 1 ? '1 Dienst gespeichert' : "{$shifts} Dienste gespeichert";
 
         if (GoogleCalendar::connected()) {
             try {
                 GoogleCalendar::sync(min($dates), max($dates));
 
-                return redirect()->route('home')->with('status', "{$saved} and added to Google Calendar.");
+                return redirect()->route('home')->with('status', "{$saved} und in Google Kalender eingetragen.");
             } catch (GoogleCalendarException $e) {
                 return redirect()->route('home')->with('status', "{$saved}.")
                     ->with('google_error', $e->getMessage())->with('saved_scan', $scan->id);

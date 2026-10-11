@@ -1,7 +1,7 @@
 {
   "name": "Amor",
   "short_name": "Amor",
-  "description": "Photograph the duty roster, and every shift goes into your calendar.",
+  "description": "Dienstplan fotografieren, und jeder Dienst landet in deinem Kalender.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

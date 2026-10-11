@@ -17,7 +17,7 @@ class RequirePassword
     public function handle(Request $request, Closure $next): Response
     {
         if (! self::configured()) {
-            abort(503, 'Set AMOR_PASSWORD in .env to use Amor.');
+            abort(503, 'Setze AMOR_PASSWORD in .env, um Amor zu verwenden.');
         }
         if (! hash_equals(self::token(), (string) $request->cookie(self::COOKIE))) {
             return redirect()->guest(route('login'));

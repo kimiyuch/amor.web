@@ -27,10 +27,10 @@ class GoogleController extends Controller
     {
         abort_unless(GoogleCalendar::configured(), 404);
         if (! Cache::pull('google.oauth.'.$request->query('state', ''))) {
-            return view('google-connected', ['error' => 'This sign-in link has expired. Start again in Amor\'s settings.']);
+            return view('google-connected', ['error' => 'Dieser Anmelde-Link ist abgelaufen. Starte in den Einstellungen von Amor nochmals.']);
         }
         if ($request->query('error') || ! $request->query('code')) {
-            return view('google-connected', ['error' => 'Google Calendar wasn\'t connected. You can try again in Amor\'s settings.']);
+            return view('google-connected', ['error' => 'Google Kalender wurde nicht verbunden. Du kannst es in den Einstellungen von Amor nochmals versuchen.']);
         }
 
         try {
@@ -54,7 +54,7 @@ class GoogleController extends Controller
     {
         GoogleCalendar::disconnect();
 
-        return redirect()->route('settings')->with('status', 'Google Calendar is disconnected. Its events stay where they are.');
+        return redirect()->route('settings')->with('status', 'Google Kalender ist getrennt. Die Einträge bleiben, wo sie sind.');
     }
 
     /** Tries a roster's shifts again after Google reported an error. */
@@ -68,7 +68,7 @@ class GoogleController extends Controller
             return redirect()->route('home')->with('google_error', $e->getMessage())->with('saved_scan', $scan->id);
         }
 
-        return redirect()->route('home')->with('status', "{$result['saved']} ".Str::plural('shift', $result['saved']).' added to Google Calendar.');
+        return redirect()->route('home')->with('status', "{$result['saved']} ".($result['saved'] === 1 ? 'Dienst' : 'Dienste').' in Google Kalender eingetragen.');
     }
 
     /** Brings all shifts from today on into the calendar, e.g. right after connecting. */

@@ -11,13 +11,13 @@
         <h1 id="month-heading" class="font-display text-[1.375rem] font-semibold tracking-tight sm:text-2xl">{{ $title }}</h1>
         <div class="flex items-center gap-1">
             @unless ($isCurrent)
-                <x-button :href="route('home')" variant="secondary" size="sm" class="mr-1">Today</x-button>
+                <x-button :href="route('home')" variant="secondary" size="sm" class="mr-1">Heute</x-button>
             @endunless
-            <a href="{{ route('home', ['month' => $previous]) }}" class="{{ $iconLink }}" aria-label="Previous month">
+            <a href="{{ route('home', ['month' => $previous]) }}" class="{{ $iconLink }}" aria-label="Vorheriger Monat">
                 <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
                 <x-heroicon-m-chevron-left class="size-5 shrink-0" />
             </a>
-            <a href="{{ route('home', ['month' => $next]) }}" class="{{ $iconLink }}" aria-label="Next month">
+            <a href="{{ route('home', ['month' => $next]) }}" class="{{ $iconLink }}" aria-label="Nächster Monat">
                 <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
                 <x-heroicon-m-chevron-right class="size-5 shrink-0" />
             </a>
@@ -27,7 +27,7 @@
     <table class="-mx-1 w-[calc(100%+0.5rem)] table-fixed border-collapse">
         <thead>
             <tr>
-                @foreach (['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'] as $i => $weekday)
+                @foreach (['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as $i => $weekday)
                     <th scope="col" class="pb-1 text-center text-[0.8125rem] font-semibold whitespace-nowrap {{ $i >= 5 ? 'text-sky-900/45 dark:text-sky-100/40' : 'text-muted' }}">{{ $weekday }}</th>
                 @endforeach
             </tr>
@@ -37,8 +37,8 @@
                 <tr>
                     @foreach ($week as $day)
                         @php
-                            $label = \Illuminate\Support\Carbon::parse($day['date'])->locale('en')->isoFormat('dddd D MMMM')
-                                .($day['event'] ? ', '.$day['event']->title.', '.$day['event']->when() : ($day['kind'] === 'skipped' ? ', '.$day['code'] : ', free'));
+                            $label = \Illuminate\Support\Carbon::parse($day['date'])->locale('de')->isoFormat('dddd, D. MMMM')
+                                .($day['event'] ? ', '.$day['event']->title.', '.$day['event']->when() : ($day['kind'] === 'skipped' ? ', '.$day['code'] : ', frei'));
                         @endphp
                         <td class="p-0.5 align-top">
                             <div class="flex h-[4.25rem] flex-col items-center gap-1 pt-1.5 {{ $day['inMonth'] ? '' : 'opacity-40' }}">
@@ -66,9 +66,9 @@
 
     @if ($empty)
         <p class="text-muted text-pretty">
-            No shifts in {{ $month->locale('en')->isoFormat('MMMM') }}.
+            Keine Dienste im {{ $month->locale('de')->isoFormat('MMMM') }}.
             @if ($nextShift)
-                <a href="{{ route('home', ['month' => $nextShift->format('Y-m')]) }}" class="font-semibold text-sky-700 underline decoration-sky-700/30 underline-offset-3 dark:text-sky-300 dark:decoration-sky-300/30">Next shift: {{ $nextShift->locale('en')->isoFormat('dd DD.MM.') }}</a>
+                <a href="{{ route('home', ['month' => $nextShift->format('Y-m')]) }}" class="font-semibold text-sky-700 underline decoration-sky-700/30 underline-offset-3 dark:text-sky-300 dark:decoration-sky-300/30">Nächster Dienst: {{ $nextShift->locale('de')->isoFormat('dd DD.MM.') }}</a>
             @endif
         </p>
     @endif

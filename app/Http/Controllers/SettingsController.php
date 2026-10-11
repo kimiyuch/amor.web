@@ -71,11 +71,11 @@ class SettingsController extends Controller
                 GoogleCalendar::useColor($data['google_color'] ?? null);
                 $this->updateGoogle($data['google_calendar'] ?? null);
             } catch (GoogleCalendarException $e) {
-                return redirect()->route('settings')->with('status', 'Settings saved.')->withErrors(['google' => $e->getMessage()]);
+                return redirect()->route('settings')->with('status', 'Einstellungen gespeichert.')->withErrors(['google' => $e->getMessage()]);
             }
         }
 
-        return redirect()->route('settings')->with('status', 'Settings saved.');
+        return redirect()->route('settings')->with('status', 'Einstellungen gespeichert.');
     }
 
     private function updateGoogle(?string $calendarId): void
@@ -116,6 +116,6 @@ class SettingsController extends Controller
         Setting::put('feed_token', Str::random(32));
         Setting::put('feed_fetched_at', null);
 
-        return redirect()->route('settings')->with('status', 'New calendar link created. Subscribe again with it.');
+        return redirect()->route('settings')->with('status', 'Neuer Kalender-Link erstellt. Abonniere den Kalender damit neu.');
     }
 }

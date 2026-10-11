@@ -30,12 +30,11 @@ final class GoogleCalendar
         'https://www.googleapis.com/auth/calendar.events',
     ];
 
-    // Google's event colors (colorId => English and German name, as in Google Calendar).
+    // Google's event colors (colorId => name, as in the German Google Calendar).
     public const COLORS = [
-        '1' => 'Lavender (Lavendel)', '2' => 'Sage (Salbei)', '3' => 'Grape (Weintraube)',
-        '4' => 'Flamingo', '5' => 'Banana (Banane)', '6' => 'Tangerine (Mandarine)',
-        '7' => 'Peacock (Pfau)', '8' => 'Graphite (Grafit)', '9' => 'Blueberry (Heidelbeere)',
-        '10' => 'Basil (Basilikum)', '11' => 'Tomato (Tomate)',
+        '1' => 'Lavendel', '2' => 'Salbei', '3' => 'Weintraube', '4' => 'Flamingo', '5' => 'Banane',
+        '6' => 'Mandarine', '7' => 'Pfau', '8' => 'Grafit', '9' => 'Heidelbeere', '10' => 'Basilikum',
+        '11' => 'Tomate',
     ];
 
     // Retries when Google asks to slow down (it limits bursts per user).
@@ -86,13 +85,13 @@ final class GoogleCalendar
             'grant_type' => 'authorization_code',
         ]);
         if (! $response->ok() || ! $response->json('refresh_token')) {
-            throw new GoogleCalendarException('Google didn\'t accept the sign-in. Please try again.');
+            throw new GoogleCalendarException('Google hat die Anmeldung nicht angenommen. Bitte versuch es nochmals.');
         }
         Cache::put('google.access_token', $response->json('access_token'), now()->addSeconds($response->json('expires_in', 3600) - 60));
         self::store(['refresh_token' => Crypt::encryptString($response->json('refresh_token'))]);
 
         $primary = collect(self::calendars())->firstWhere('primary', true) ?? collect(self::calendars())->first();
-        self::store(['calendar_id' => $primary['id'] ?? 'primary', 'calendar_name' => $primary['name'] ?? 'Google Calendar']);
+        self::store(['calendar_id' => $primary['id'] ?? 'primary', 'calendar_name' => $primary['name'] ?? 'Google Kalender']);
     }
 
     public static function disconnect(): void
@@ -109,7 +108,7 @@ final class GoogleCalendar
     public static function calendars(): array
     {
         $response = self::api()->get(self::API.'/users/me/calendarList', ['minAccessRole' => 'writer']);
-        self::check($response, 'Loading your Google calendars');
+        self::check($response, 'Das Laden deiner Google Kalender');
 
         return collect($response->json('items', []))
             ->map(fn (array $c) => ['id' => $c['id'], 'name' => $c['summaryOverride'] ?? $c['summary'] ?? $c['id'], 'primary' => (bool) ($c['primary'] ?? false)])
@@ -160,13 +159,13 @@ final class GoogleCalendar
                     $response = self::send('PUT', "{$base}/".self::eventId($date), self::body($event));
                 }
             }
-            self::check($response, 'Saving the shift on '.self::day($date));
+            self::check($response, 'Das Speichern des Diensts am '.self::day($date));
         }
 
         foreach (array_diff($existing, $events->keys()->all()) as $date) {
             $response = self::send('DELETE', "{$base}/".self::eventId($date));
             if (! in_array($response->status(), [404, 410], true)) {
-                self::check($response, 'Removing the event on '.self::day($date));
+                self::check($response, 'Das Entfernen des Eintrags am '.self::day($date));
                 $removed++;
             }
         }
@@ -180,7 +179,7 @@ final class GoogleCalendar
         foreach (self::existingDates($calendarId, $from, $to) as $date) {
             $response = self::send('DELETE', self::eventsUrl($calendarId).'/'.self::eventId($date));
             if (! in_array($response->status(), [404, 410], true)) {
-                self::check($response, 'Removing the event on '.self::day($date));
+                self::check($response, 'Das Entfernen des Eintrags am '.self::day($date));
             }
         }
     }
@@ -202,7 +201,7 @@ final class GoogleCalendar
                 'maxResults' => 2500,
                 'pageToken' => $pageToken,
             ]));
-            self::check($response, 'Reading the calendar');
+            self::check($response, 'Das Lesen des Kalenders');
             foreach ($response->json('items', []) as $item) {
                 if (preg_match('/^amor(\d{4})(\d{2})(\d{2})$/', $item['id'] ?? '', $m)) {
                     $date = "{$m[1]}-{$m[2]}-{$m[3]}";
@@ -283,7 +282,7 @@ final class GoogleCalendar
         }
         $refresh = self::refreshToken();
         if (! $refresh) {
-            throw new GoogleCalendarException('Google Calendar isn\'t connected. Connect it in Settings.');
+            throw new GoogleCalendarException('Google Kalender ist nicht verbunden. Verbinde ihn in den Einstellungen.');
         }
         $response = Http::asForm()->post(self::TOKEN_URL, [
             'client_id' => config('services.google.client_id'),
@@ -294,9 +293,9 @@ final class GoogleCalendar
         if ($response->json('error') === 'invalid_grant') {
             // Revoked, or the password changed: only a new sign-in helps.
             Setting::put('google', null);
-            throw new GoogleCalendarException('Google Calendar was disconnected. Connect it again in Settings.');
+            throw new GoogleCalendarException('Google Kalender wurde getrennt. Verbinde ihn in den Einstellungen neu.');
         }
-        self::check($response, 'Signing in to Google');
+        self::check($response, 'Die Anmeldung bei Google');
         Cache::put('google.access_token', $response->json('access_token'), now()->addSeconds($response->json('expires_in', 3600) - 60));
 
         return $response->json('access_token');
@@ -309,8 +308,8 @@ final class GoogleCalendar
         }
         $detail = $response instanceof Response
             ? ($response->json('error.message') ?? $response->json('error_description') ?? 'error '.$response->status())
-            : 'no connection';
-        throw new GoogleCalendarException("{$what} didn't work ({$detail}).");
+            : 'keine Verbindung';
+        throw new GoogleCalendarException("{$what} hat nicht funktioniert ({$detail}).");
     }
 
     private static function refreshToken(): ?string

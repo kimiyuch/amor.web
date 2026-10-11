@@ -112,7 +112,7 @@ class GoogleCalendarTest extends TestCase
 
         // The callback works without Amor's cookie: Google may return to a different browser view.
         $this->get('/google/callback?'.http_build_query(['state' => $query['state'], 'code' => 'abc']))
-            ->assertOk()->assertSee('Google Calendar is connected')->assertSee('Anna');
+            ->assertOk()->assertSee('Google Kalender ist verbunden')->assertSee('Anna');
 
         $stored = Setting::get('google');
         $this->assertNotSame('refresh', $stored['refresh_token']);
@@ -121,7 +121,7 @@ class GoogleCalendarTest extends TestCase
         $this->assertTrue(GoogleCalendar::connected());
 
         // The state works once.
-        $this->get('/google/callback?'.http_build_query(['state' => $query['state'], 'code' => 'abc']))->assertSee('expired');
+        $this->get('/google/callback?'.http_build_query(['state' => $query['state'], 'code' => 'abc']))->assertSee('abgelaufen');
     }
 
     public function test_saving_a_roster_writes_its_shifts_into_the_calendar(): void
@@ -132,7 +132,7 @@ class GoogleCalendarTest extends TestCase
         $this->google['anna@gmail.com/dentist'] = ['summary' => 'Not from Amor', 'extendedProperties' => ['private' => []]];
 
         $scan = $this->savedScan();
-        $this->assertSame('24 shifts saved and added to Google Calendar.', session('status'));
+        $this->assertSame('24 Dienste gespeichert und in Google Kalender eingetragen.', session('status'));
 
         $this->assertCount(25, $this->google);
         $this->assertArrayHasKey('anna@gmail.com/dentist', $this->google, 'other events stay');
@@ -154,7 +154,7 @@ class GoogleCalendarTest extends TestCase
         $this->assertArrayNotHasKey('anna@gmail.com/amor20261201', $this->google);
         $this->assertSame('HO', $this->google['anna@gmail.com/amor20261202']['summary']);
 
-        $this->signedIn()->withSession(['saved_scan' => $scan->id])->get('/')->assertDontSee('Add them to your calendar');
+        $this->signedIn()->withSession(['saved_scan' => $scan->id])->get('/')->assertDontSee('Füge sie deinem Kalender hinzu');
     }
 
     public function test_rate_limits_are_waited_out(): void
@@ -164,7 +164,7 @@ class GoogleCalendarTest extends TestCase
 
         $this->savedScan();
 
-        $this->assertSame('24 shifts saved and added to Google Calendar.', session('status'));
+        $this->assertSame('24 Dienste gespeichert und in Google Kalender eingetragen.', session('status'));
         $this->assertCount(24, $this->google);
     }
 
@@ -187,10 +187,10 @@ class GoogleCalendarTest extends TestCase
         $scan = $this->savedScan();
 
         $this->assertSame(24, Shift::count());
-        $this->assertSame('24 shifts saved.', session('status'));
+        $this->assertSame('24 Dienste gespeichert.', session('status'));
         $this->assertStringContainsString('Rate Limit Exceeded', session('google_error'));
         $this->signedIn()->withSession(['saved_scan' => $scan->id, 'google_error' => session('google_error')])->get('/')
-            ->assertSee('Try again')->assertSee(route('google.sync', $scan), false);
+            ->assertSee('Nochmals versuchen')->assertSee(route('google.sync', $scan), false);
     }
 
     public function test_a_revoked_connection_asks_to_connect_again(): void
@@ -200,7 +200,7 @@ class GoogleCalendarTest extends TestCase
 
         $this->savedScan();
 
-        $this->assertStringContainsString('Connect it again in Settings', session('google_error'));
+        $this->assertStringContainsString('Verbinde ihn in den Einstellungen neu', session('google_error'));
         $this->assertFalse(GoogleCalendar::connected());
     }
 
@@ -210,7 +210,7 @@ class GoogleCalendarTest extends TestCase
         $this->savedScan();
         $this->assertCount(24, $this->google);
 
-        $this->signedIn()->get('/settings')->assertSee('Arbeit')->assertSee('Disconnect Google Calendar');
+        $this->signedIn()->get('/settings')->assertSee('Arbeit')->assertSee('Google Kalender trennen');
         $this->signedIn()->put('/settings', [
             'person' => 'Anna Muster',
             'google_calendar' => 'work@group.calendar.google.com',
@@ -233,7 +233,7 @@ class GoogleCalendarTest extends TestCase
             'google_color' => $color,
             'codes' => ShiftCode::all(['code', 'title', 'start', 'end', 'skip'])->toArray(),
         ];
-        $this->signedIn()->get('/settings')->assertSee('Basil (Basilikum)');
+        $this->signedIn()->get('/settings')->assertSee('Basilikum');
         $this->signedIn()->put('/settings', $settings('10'))->assertSessionHasNoErrors();
         $this->assertSame('10', GoogleCalendar::colorId());
         $this->assertSame('10', $this->google['anna@gmail.com/amor20261201']['colorId']);
@@ -256,6 +256,6 @@ class GoogleCalendarTest extends TestCase
     {
         config(['services.google.client_id' => null]);
         $this->signedIn()->get('/google/connect')->assertNotFound();
-        $this->signedIn()->get('/settings')->assertSee('set GOOGLE_CLIENT_ID', false);
+        $this->signedIn()->get('/settings')->assertSee('setze GOOGLE_CLIENT_ID', false);
     }
 }

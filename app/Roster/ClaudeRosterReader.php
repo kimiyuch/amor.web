@@ -34,7 +34,7 @@ final class ClaudeRosterReader implements RosterReader
         3. Zoom into the person's row about 7–10 days at a time, with enough vertical margin to see the neighbouring rows, so you don't drift onto the wrong row. Check the column alignment against the header where the photo is slanted.
         4. Answer with one entry per date of the plan period, in order. Mark a cell uncertain when glare, a fold or blur makes it hard to read, or when you are not sure it belongs to this row.
 
-        row_box is the bounding box of the person's whole row (all day columns, plus the name) in normalized coordinates of the original photo. If the person is not in the roster, set person_found to false, return no days, and list the closest names you saw in notes. Keep notes short.
+        row_box is the bounding box of the person's whole row (all day columns, plus the name) in normalized coordinates of the original photo. If the person is not in the roster, set person_found to false, return no days, and list the closest names you saw in notes. Write notes in German (Swiss spelling: "ss", never "ß") and keep them short.
         TXT;
 
     public function __construct(private string $apiKey, private string $model) {}
@@ -42,7 +42,7 @@ final class ClaudeRosterReader implements RosterReader
     public function read(Photo $photo, string $person, callable $onStatus): array
     {
         if ($this->apiKey === '') {
-            throw new RosterReadException('The Anthropic API key is missing. Set ANTHROPIC_API_KEY in .env.');
+            throw new RosterReadException('Der Anthropic API-Schlüssel fehlt. Setze ANTHROPIC_API_KEY in .env.');
         }
         $client = new Client(apiKey: $this->apiKey);
         $overview = $photo->crop(['x0' => 0, 'y0' => 0, 'x1' => 1, 'y1' => 1]);
@@ -60,7 +60,7 @@ final class ClaudeRosterReader implements RosterReader
         $fallbacks = in_array($this->model, self::FALLBACK_MODELS, true);
 
         for ($turn = 1; $turn <= self::MAX_TURNS; $turn++) {
-            $onStatus($turn === 1 ? 'Looking at the roster…' : 'Reading the row…');
+            $onStatus($turn === 1 ? 'Ich schaue mir den Dienstplan an…' : 'Ich lese deine Zeile…');
             try {
                 $response = $client->beta->messages->create(
                     model: $this->model,
@@ -82,17 +82,17 @@ final class ClaudeRosterReader implements RosterReader
 
             if ($response->stopReason === 'refusal') {
                 $category = $response->stopDetails?->category;
-                throw new RosterReadException('Claude declined to read this photo'.($category ? " ({$category})" : '').'. Try another photo.');
+                throw new RosterReadException('Claude wollte dieses Foto nicht lesen'.($category ? " ({$category})" : '').'. Versuch es mit einem anderen Foto.');
             }
             if ($response->stopReason === 'max_tokens') {
-                throw new RosterReadException('Claude\'s answer was cut off. Please try again.');
+                throw new RosterReadException('Die Antwort von Claude wurde abgeschnitten. Bitte versuch es nochmals.');
             }
 
             $toolUses = array_values(array_filter($response->content, fn ($b) => $b->type === 'tool_use'));
             if ($toolUses === [] && $response->stopReason !== 'pause_turn') {
                 $result = json_decode(self::finalText($response->content), true);
                 if (! is_array($result) || ! isset($result['days'])) {
-                    throw new RosterReadException('Claude\'s answer could not be read. Please try again.');
+                    throw new RosterReadException('Die Antwort von Claude liess sich nicht lesen. Bitte versuch es nochmals.');
                 }
 
                 return $result;
@@ -112,7 +112,7 @@ final class ClaudeRosterReader implements RosterReader
 
                     continue;
                 }
-                $onStatus('Zooming in…');
+                $onStatus('Ich zoome hinein…');
                 $crop = $photo->crop($box);
                 $content[] = ['type' => 'tool_result', 'toolUseID' => $tool->id, 'content' => [
                     ['type' => 'text', 'text' => sprintf('Crop x %.3f–%.3f, y %.3f–%.3f (%d×%d px)',
@@ -126,7 +126,7 @@ final class ClaudeRosterReader implements RosterReader
             $messages[] = ['role' => 'user', 'content' => $content];
         }
 
-        throw new RosterReadException('Claude did not finish reading the roster. Please try again.');
+        throw new RosterReadException('Claude ist mit dem Dienstplan nicht fertig geworden. Bitte versuch es nochmals.');
     }
 
     private static function image(string $jpeg): array
@@ -152,12 +152,12 @@ final class ClaudeRosterReader implements RosterReader
     private static function describe(APIStatusException|APIConnectionException $e): string
     {
         return match (true) {
-            $e instanceof AuthenticationException => 'The Anthropic API key was rejected. Check ANTHROPIC_API_KEY in .env.',
-            $e instanceof PermissionDeniedException => 'This API key may not use the selected model.',
-            $e instanceof NotFoundException => 'Model not found. Check AMOR_MODEL in .env.',
-            $e instanceof RateLimitException => 'Claude is busy right now. Wait a minute and try again.',
-            $e instanceof APIConnectionException => 'Amor could not reach Claude. Please try again.',
-            default => 'Claude reported an error ('.($e->status ?? '?').'). Please try again.',
+            $e instanceof AuthenticationException => 'Der Anthropic API-Schlüssel wurde abgelehnt. Prüfe ANTHROPIC_API_KEY in .env.',
+            $e instanceof PermissionDeniedException => 'Dieser API-Schlüssel darf das gewählte Modell nicht verwenden.',
+            $e instanceof NotFoundException => 'Modell nicht gefunden. Prüfe AMOR_MODEL in .env.',
+            $e instanceof RateLimitException => 'Claude ist gerade ausgelastet. Warte eine Minute und versuch es nochmals.',
+            $e instanceof APIConnectionException => 'Amor hat Claude nicht erreicht. Bitte versuch es nochmals.',
+            default => 'Claude hat einen Fehler gemeldet ('.($e->status ?? '?').'). Bitte versuch es nochmals.',
         };
     }
 

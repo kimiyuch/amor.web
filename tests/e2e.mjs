@@ -23,53 +23,53 @@ const rows = page.locator('[data-day]');
 // Password
 await page.goto(BASE);
 assert.match(page.url(), /\/login$/);
-await page.getByLabel('Password').fill('wrong');
-await page.getByRole('button', { name: 'Open Amor' }).click();
-await page.getByText("That password isn't right.").waitFor();
-await page.getByLabel('Password').fill(PASSWORD);
+await page.getByLabel('Passwort').fill('wrong');
+await page.getByRole('button', { name: 'Amor öffnen' }).click();
+await page.getByText('Das Passwort stimmt nicht.').waitFor();
+await page.getByLabel('Passwort').fill(PASSWORD);
 await page.screenshot({ path: shots + '1-login.png' });
-await page.getByRole('button', { name: 'Open Amor' }).click();
-await page.getByRole('link', { name: 'Add your first roster' }).click();
-await page.getByRole('button', { name: 'Read shifts' }).waitFor();
+await page.getByRole('button', { name: 'Amor öffnen' }).click();
+await page.getByRole('link', { name: 'Ersten Dienstplan hinzufügen' }).click();
+await page.getByRole('button', { name: 'Dienste lesen' }).waitFor();
 
 // Scan
-await page.getByLabel('Name in the roster').fill('Anna Muster');
+await page.getByLabel('Name im Dienstplan').fill('Anna Muster');
 await page.locator('[data-photo-input]').setInputFiles(fixture);
 await page.locator('[data-photo-preview]').waitFor();
 const previewSize = () => page.locator('[data-photo-preview]').evaluate((img) => [img.naturalWidth, img.naturalHeight]);
 await page.waitForFunction(() => document.querySelector('[data-photo-preview]').naturalWidth > 0);
 const [w, h] = await previewSize();
 assert.ok(w > h, 'the fixture is landscape');
-await page.getByRole('button', { name: 'Rotate' }).click();
+await page.getByRole('button', { name: 'Drehen' }).click();
 await page.waitForFunction(([w]) => document.querySelector('[data-photo-preview]').naturalHeight === w, [w]);
 assert.deepEqual(await previewSize(), [h, w], 'rotated by 90°');
 assert.deepEqual(await page.locator('[data-photo-input]').evaluate((i) => [i.files.length, i.files[0].type]), [1, 'image/jpeg']);
 await page.screenshot({ path: shots + '2-photo-rotated.png' });
 for (let i = 0; i < 3; i++) {
-    await page.getByRole('button', { name: 'Rotate' }).click();
+    await page.getByRole('button', { name: 'Drehen' }).click();
     await page.waitForFunction(() => !document.querySelector('[data-photo-rotate]').disabled);
 }
 assert.deepEqual(await previewSize(), [w, h], 'back upright after four turns');
 await page.screenshot({ path: shots + '2-photo.png' });
-await page.getByRole('button', { name: 'Read shifts' }).click();
-await page.getByRole('heading', { name: 'Reading the roster' }).waitFor();
+await page.getByRole('button', { name: 'Dienste lesen' }).click();
+await page.getByRole('heading', { name: 'Dienstplan wird gelesen' }).waitFor();
 await page.screenshot({ path: shots + '3-reading.png' });
 
 // Review
 await page.getByRole('heading', { name: 'Muster Anna (4711)' }).waitFor({ timeout: 60_000 });
 assert.equal(await rows.count(), 34);
 assert.equal(await page.locator('[data-day][data-uncertain]').count(), 1);
-assert.ok(await page.locator('img[alt="Your row in the photo"]').evaluate((img) => img.complete && img.naturalWidth > 500), 'row strip');
-assert.match(await page.locator('[data-summary]').textContent(), /^\d+ shifts, 1 to check$/);
+assert.ok(await page.locator('img[alt="Deine Zeile auf dem Foto"]').evaluate((img) => img.complete && img.naturalWidth > 500), 'row strip');
+assert.match(await page.locator('[data-summary]').textContent(), /^\d+ Dienste, 1 zu prüfen$/);
 await page.screenshot({ path: shots + '4-review.png' });
 await page.screenshot({ path: shots + '4-review-full.png', fullPage: true });
 
 const third = rows.nth(2);
 await third.locator('input').fill('HO');
 assert.equal(await third.getAttribute('data-kind'), 'allday');
-assert.equal(await third.locator('[data-event-title]').textContent(), 'All day');
+assert.equal(await third.locator('[data-event-title]').textContent(), 'Ganztägig');
 await rows.nth(4).locator('input').fill('M1');
-assert.match(await page.locator('[data-summary]').textContent(), /^\d+ shifts$/, 'checked cell no longer counts');
+assert.match(await page.locator('[data-summary]').textContent(), /^\d+ Dienste$/, 'checked cell no longer counts');
 
 // Saving shows that it's busy: record the button right after the submit, read it on the next page.
 await page.evaluate(() => {
@@ -79,26 +79,26 @@ await page.evaluate(() => {
         sessionStorage.busy = JSON.stringify({ text: button.textContent.trim(), busy: button.getAttribute('aria-busy'), disabled: button.disabled, spinner: !!button.querySelector('.animate-spin') });
     }));
 });
-await page.getByRole('button', { name: 'Save shifts' }).click();
+await page.getByRole('button', { name: 'Dienste speichern' }).click();
 await page.waitForURL(BASE + '/');
-assert.deepEqual(JSON.parse(await page.evaluate(() => sessionStorage.busy)), { text: 'Saving…', busy: 'true', disabled: true, spinner: true });
-await page.getByText(/\d+ shifts saved\./).waitFor();
-await page.getByRole('heading', { name: 'Add them to your calendar' }).waitFor();
-const icsHref = await page.getByRole('link', { name: 'Add to calendar' }).getAttribute('href');
+assert.deepEqual(JSON.parse(await page.evaluate(() => sessionStorage.busy)), { text: 'Wird gespeichert…', busy: 'true', disabled: true, spinner: true });
+await page.getByText(/\d+ Dienste gespeichert\./).waitFor();
+await page.getByRole('heading', { name: 'Füge sie deinem Kalender hinzu' }).waitFor();
+const icsHref = await page.getByRole('link', { name: 'Zum Kalender hinzufügen' }).getAttribute('href');
 const icsResponse = await context.request.get(icsHref);
 assert.match(icsResponse.headers()['content-type'], /^text\/calendar/);
 assert.ok((await icsResponse.text()).split('BEGIN:VEVENT').length > 10, 'the file has the saved shifts');
 // The month with the saved shifts
 await page.locator('#month-heading').waitFor();
 assert.ok((await page.locator('table .font-bold').count()) >= 20, 'the days show their codes');
-await page.getByRole('link', { name: 'Add a roster' }).waitFor();
-await page.getByRole('link', { name: 'Next month' }).click();
-await page.getByRole('link', { name: 'Today' }).click();
+await page.getByRole('link', { name: 'Dienstplan hinzufügen' }).waitFor();
+await page.getByRole('link', { name: 'Nächster Monat' }).click();
+await page.getByRole('link', { name: 'Heute' }).click();
 await page.locator('#month-heading').waitFor();
 await page.screenshot({ path: shots + '5-home.png', fullPage: true });
 
 // Settings: shift times, then the feed has timed events
-await page.getByRole('link', { name: 'Settings' }).click();
+await page.getByRole('link', { name: 'Einstellungen' }).click();
 const codeRow = async (code) => {
     const i = await page.locator('[data-code-row] input[name$="[code]"]').evaluateAll((els, c) => els.findIndex((e) => e.value === c), code);
     assert.ok(i >= 0, `code ${code}`);
@@ -112,19 +112,19 @@ const night = await codeRow('S1/BD');
 await night.locator('input[name$="[start]"]').fill('20:00');
 await night.locator('input[name$="[end]"]').fill('07:30');
 await (await codeRow('B')).locator('input[type=checkbox]').check();
-await page.getByRole('button', { name: 'Add code' }).click();
+await page.getByRole('button', { name: 'Code hinzufügen' }).click();
 await page.locator('[data-code-row]').last().locator('input[name$="[code]"]').fill('zz');
 await page.screenshot({ path: shots + '6-settings.png' });
-await page.getByRole('button', { name: 'Save settings' }).click();
-await page.getByText('Settings saved.').waitFor();
+await page.getByRole('button', { name: 'Einstellungen speichern' }).click();
+await page.getByText('Einstellungen gespeichert.').waitFor();
 assert.ok((await page.locator('[data-code-row] input[name$="[code]"]').evaluateAll((els) => els.map((e) => e.value))).includes('ZZ'));
 
-const feedUrl = await page.getByRole('button', { name: 'Copy link' }).getAttribute('data-copy');
+const feedUrl = await page.getByRole('button', { name: 'Link kopieren' }).getAttribute('data-copy');
 const feed = await (await context.request.get(feedUrl)).text();
 assert.match(feed, /BEGIN:VCALENDAR/);
 assert.match(feed, /SUMMARY:Frühdienst/);
 assert.match(feed, /DTSTART;TZID=Europe\/Zurich:\d{8}T200000\r\nDTEND;TZID=Europe\/Zurich:\d{8}T073000/);
-assert.match(await page.getByRole('link', { name: 'Subscribe on iPhone or Mac' }).getAttribute('href'), /^webcal:\/\//);
+assert.match(await page.getByRole('link', { name: 'Auf iPhone oder Mac abonnieren' }).getAttribute('href'), /^webcal:\/\//);
 
 await page.emulateMedia({ colorScheme: 'dark' });
 await page.goto(BASE + '/');

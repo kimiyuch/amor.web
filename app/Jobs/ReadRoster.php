@@ -30,7 +30,7 @@ class ReadRoster implements ShouldQueue
     public function handle(RosterReader $reader): void
     {
         $scan = $this->scan;
-        $scan->update(['status' => 'reading', 'status_text' => 'Getting the photo ready…']);
+        $scan->update(['status' => 'reading', 'status_text' => 'Foto wird vorbereitet…']);
         $disk = Storage::disk('local');
 
         try {
@@ -53,7 +53,7 @@ class ReadRoster implements ShouldQueue
             $scan->update(['status' => 'failed', 'error' => $e->getMessage()]);
         } catch (Throwable $e) {
             Log::error('Reading a roster failed', ['scan' => $scan->id, 'exception' => $e]);
-            $scan->update(['status' => 'failed', 'error' => 'Something went wrong while reading the photo. Please try again.']);
+            $scan->update(['status' => 'failed', 'error' => 'Beim Lesen des Fotos ist etwas schiefgegangen. Bitte versuch es nochmals.']);
         } finally {
             // The photo shows the whole team's roster; only the person's row strip is kept.
             $disk->delete($scan->photo_path);
@@ -64,7 +64,7 @@ class ReadRoster implements ShouldQueue
     /** Called when the worker gives up on the job, e.g. after the timeout. */
     public function failed(?Throwable $e): void
     {
-        $this->scan->update(['status' => 'failed', 'error' => 'Reading the photo took too long. Please try again.']);
+        $this->scan->update(['status' => 'failed', 'error' => 'Das Lesen des Fotos hat zu lange gedauert. Bitte versuch es nochmals.']);
         if ($this->scan->photo_path) {
             Storage::disk('local')->delete($this->scan->photo_path);
             $this->scan->update(['photo_path' => null]);

@@ -47,8 +47,8 @@ class ScanTest extends TestCase
             ->assertOk()
             ->assertSee('Muster Anna (4711)')
             ->assertSee('01.12.2026 – 03.01.2027')
-            ->assertSee('Check on the photo')
-            ->assertSee('Save shifts');
+            ->assertSee('Auf dem Foto prüfen')
+            ->assertSee('Dienste speichern');
         $this->signedIn()->get("/scans/{$scan->id}/row.jpg")->assertOk();
         $this->signedIn()->withCredentials()->getJson("/scans/{$scan->id}/status")->assertJson(['status' => 'read']);
     }
@@ -61,7 +61,7 @@ class ScanTest extends TestCase
     public function test_a_person_who_is_not_in_the_roster(): void
     {
         $scan = $this->scan('Nobody Here');
-        $this->signedIn()->get("/scans/{$scan->id}")->assertOk()->assertSee('isn\'t in this roster', false)->assertSee('Keller Sara');
+        $this->signedIn()->get("/scans/{$scan->id}")->assertOk()->assertSee('steht nicht in diesem Dienstplan')->assertSee('Keller Sara');
         $this->signedIn()->post("/scans/{$scan->id}/save")->assertNotFound();
         $this->signedIn()->get("/scans/{$scan->id}/shifts.ics")->assertNotFound();
     }
@@ -76,11 +76,11 @@ class ScanTest extends TestCase
 
         $this->signedIn()->post("/scans/{$scan->id}/save", ['codes' => $codes])
             ->assertRedirect('/')
-            ->assertSessionHas('status', '24 shifts saved.');
+            ->assertSessionHas('status', '24 Dienste gespeichert.');
 
         // Right after saving, the home page offers the shifts as a file to add to a calendar.
         $this->signedIn()->withSession(['saved_scan' => $scan->id])->get('/')
-            ->assertSee('Add them to your calendar')
+            ->assertSee('Füge sie deinem Kalender hinzu')
             ->assertSee(route('scans.ics', $scan), false);
         $ics = $this->signedIn()->get("/scans/{$scan->id}/shifts.ics")->assertOk();
         $this->assertStringStartsWith('text/calendar', $ics->headers->get('Content-Type'));
@@ -109,30 +109,30 @@ class ScanTest extends TestCase
         Shift::create(['date' => '2027-02-10', 'code' => 'HO']);
 
         $this->signedIn()->get('/')
-            ->assertSee('December 2026')
-            ->assertSee('Wednesday 2 December, Frühdienst, 06:45 – 15:15')   // for screen readers
-            ->assertSee('Saturday 5 December, B')                             // skipped
-            ->assertDontSee('February 2027')
+            ->assertSee('Dezember 2026')
+            ->assertSee('Mittwoch, 2. Dezember, Frühdienst, 06:45 – 15:15')   // for screen readers
+            ->assertSee('Samstag, 5. Dezember, B')                             // skipped
+            ->assertDontSee('Februar 2027')
             ->assertSee('?month=2027-01', false)
-            ->assertSee('Add a roster')
+            ->assertSee('Dienstplan hinzufügen')
             ->assertSee(route('scans.create'), false)
-            ->assertSee("Here's your month.", false)
-            ->assertDontSee('Roster photo', false);
+            ->assertSee('Hier ist dein Monat.')
+            ->assertDontSee('Foto des Dienstplans');
 
         $this->signedIn()->get('/?month=2027-01')
-            ->assertSee('January 2027')
-            ->assertSee('No shifts in January.')
-            ->assertSee('Next shift: We 10.02.')
-            ->assertSee('Today');
+            ->assertSee('Januar 2027')
+            ->assertSee('Keine Dienste im Januar.')
+            ->assertSee('Nächster Dienst: Mi 10.02.')
+            ->assertSee('Heute');
 
-        $this->signedIn()->get('/?month=nonsense')->assertSee('December 2026');
+        $this->signedIn()->get('/?month=nonsense')->assertSee('Dezember 2026');
     }
 
     public function test_without_shifts_the_home_page_introduces_amor(): void
     {
         $this->signedIn()->get('/')
-            ->assertSee('Every shift, straight into your calendar')
-            ->assertSee('Add your first roster');
+            ->assertSee('Jeder Dienst direkt in deinem Kalender')
+            ->assertSee('Ersten Dienstplan hinzufügen');
     }
 
     public function test_the_add_a_roster_page(): void
@@ -140,9 +140,9 @@ class ScanTest extends TestCase
         Setting::put('person', 'Anna Muster');
         $this->signedIn()->get('/scans/new')
             ->assertOk()
-            ->assertSee('Add a roster')
+            ->assertSee('Dienstplan hinzufügen')
             ->assertSee('value="Anna Muster"', false)
-            ->assertSee('For a photo Amor reads well')
-            ->assertSee('Read shifts');
+            ->assertSee('So liest Amor das Foto am besten')
+            ->assertSee('Dienste lesen');
     }
 }

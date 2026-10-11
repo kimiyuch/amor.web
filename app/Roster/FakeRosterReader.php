@@ -14,7 +14,7 @@ final class FakeRosterReader implements RosterReader
 
     public function read(Photo $photo, string $person, callable $onStatus): array
     {
-        foreach (['Looking at the roster…', 'Zooming in…', 'Reading the row…'] as $status) {
+        foreach (['Ich schaue mir den Dienstplan an…', 'Ich zoome hinein…', 'Ich lese deine Zeile…'] as $status) {
             $onStatus($status);
             if (! app()->runningUnitTests()) {
                 usleep(900_000);
@@ -24,7 +24,7 @@ final class FakeRosterReader implements RosterReader
         if (str_contains(strtolower($person), 'nobody')) {
             return ['person_found' => false, 'row_label' => '', 'period_start' => '', 'period_end' => '',
                 'row_box' => ['x0' => 0, 'y0' => 0, 'x1' => 0, 'y1' => 0], 'days' => [],
-                'notes' => 'Closest names: Muster Anna, Keller Sara.'];
+                'notes' => 'Ähnliche Namen: Muster Anna, Keller Sara.'];
         }
 
         $start = now()->startOfMonth()->toDateString();
@@ -40,7 +40,7 @@ final class FakeRosterReader implements RosterReader
             'period_end' => end($days)['date'],
             'row_box' => ['x0' => 0.03, 'y0' => 0.42, 'x1' => 0.97, 'y1' => 0.47],
             'days' => $days,
-            'notes' => 'Glare over the 5th; please check that cell.',
+            'notes' => 'Spiegelung über dem 5., bitte diese Zelle prüfen.',
         ];
     }
 }

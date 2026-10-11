@@ -67,7 +67,7 @@ if (scanForm) {
     scanForm.addEventListener('submit', async (event) => {
         const button = scanForm.querySelector('[data-scan-submit]');
         button.disabled = true;
-        button.lastChild.textContent = 'Uploading…';
+        button.lastChild.textContent = 'Wird hochgeladen…';
         // Upload the photo the way it is shown, also when a rotation is still being drawn.
         event.preventDefault();
         await rendering.catch(() => {});
@@ -105,13 +105,13 @@ if (days) {
 
     const describe = (code) => {
         code = code.trim();
-        if (!code) return { kind: 'free', title: 'Free', when: '' };
+        if (!code) return { kind: 'free', title: 'Frei', when: '' };
         const entry = find(code);
-        if (entry?.skip) return { kind: 'skipped', title: 'Not added', when: '' };
+        if (entry?.skip) return { kind: 'skipped', title: 'Nicht im Kalender', when: '' };
         // Lead with the time; the title only when the code has one of its own.
         const title = entry?.title?.trim();
         const timed = Boolean(entry?.start && entry?.end);
-        const when = timed ? `${entry.start} – ${entry.end}${entry.end <= entry.start ? ' next day' : ''}` : 'All day';
+        const when = timed ? `${entry.start} – ${entry.end}${entry.end <= entry.start ? ' (Folgetag)' : ''}` : 'Ganztägig';
         const kind = timed ? 'timed' : 'allday';
         return title ? { kind, title, when } : { kind, title: when, when: '' };
     };
@@ -121,7 +121,7 @@ if (days) {
         const rows = [...days.querySelectorAll('[data-day]')];
         const shifts = rows.filter((row) => ['timed', 'allday'].includes(row.dataset.kind)).length;
         const unsure = rows.filter((row) => row.hasAttribute('data-uncertain')).length;
-        summary.textContent = `${shifts} ${shifts === 1 ? 'shift' : 'shifts'}${unsure ? `, ${unsure} to check` : ''}`;
+        summary.textContent = `${shifts} ${shifts === 1 ? 'Dienst' : 'Dienste'}${unsure ? `, ${unsure} zu prüfen` : ''}`;
     };
 
     days.addEventListener('input', (event) => {
@@ -161,9 +161,9 @@ for (const button of document.querySelectorAll('[data-copy]')) {
         const original = label.textContent;
         try {
             await navigator.clipboard.writeText(button.dataset.copy);
-            label.textContent = ' Copied';
+            label.textContent = ' Kopiert';
         } catch {
-            prompt('Copy this link:', button.dataset.copy);
+            prompt('Diesen Link kopieren:', button.dataset.copy);
         }
         setTimeout(() => (label.textContent = original), 2000);
     });

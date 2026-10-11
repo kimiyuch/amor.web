@@ -26,13 +26,13 @@ final readonly class ShiftEvent
         return ! $this->allDay && substr($this->end, 0, 10) !== $this->date;
     }
 
-    /** "06:45 – 15:15", "20:00 – 07:30 next day" or "All day". */
+    /** "06:45 – 15:15", "20:00 – 07:30 (Folgetag)" or "Ganztägig". */
     public function when(): string
     {
         if ($this->allDay) {
-            return 'All day';
+            return 'Ganztägig';
         }
 
-        return substr($this->start, 11, 5).' – '.substr($this->end, 11, 5).($this->endsNextDay() ? ' next day' : '');
+        return substr($this->start, 11, 5).' – '.substr($this->end, 11, 5).($this->endsNextDay() ? ' (Folgetag)' : '');
     }
 }

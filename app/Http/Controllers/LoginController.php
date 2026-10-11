@@ -16,11 +16,11 @@ class LoginController extends Controller
 
     public function store(Request $request)
     {
-        abort_unless(RequirePassword::configured(), 503, 'Set AMOR_PASSWORD in .env to use Amor.');
+        abort_unless(RequirePassword::configured(), 503, 'Setze AMOR_PASSWORD in .env, um Amor zu verwenden.');
         $request->validate(['password' => 'required|string']);
 
         if (! hash_equals((string) config('amor.password'), $request->input('password'))) {
-            throw ValidationException::withMessages(['password' => 'That password isn\'t right.']);
+            throw ValidationException::withMessages(['password' => 'Das Passwort stimmt nicht.']);
         }
 
         Cookie::queue(RequirePassword::COOKIE, RequirePassword::token(), 60 * 24 * 365);

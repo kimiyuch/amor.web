@@ -15,7 +15,7 @@ class LoginTest extends TestCase
         $this->get('/')->assertRedirect('/login');
         $this->get('/settings')->assertRedirect('/login');
         $this->get('/scans/new')->assertRedirect('/login');
-        $this->get('/login')->assertOk()->assertSee('Password');
+        $this->get('/login')->assertOk()->assertSee('Passwort');
     }
 
     public function test_a_wrong_password_is_rejected(): void
@@ -32,7 +32,7 @@ class LoginTest extends TestCase
         $this->assertNotNull($cookie);
         $this->assertGreaterThan(now()->addDays(360)->timestamp, $cookie->getExpiresTime());
 
-        $this->signedIn()->get('/')->assertOk()->assertSee('Add your first roster');
+        $this->signedIn()->get('/')->assertOk()->assertSee('Ersten Dienstplan hinzufügen');
     }
 
     public function test_changing_the_password_signs_everyone_out(): void
