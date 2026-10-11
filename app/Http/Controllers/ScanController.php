@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Calendar\GoogleCalendar;
+use App\Calendar\GoogleCalendarException;
 use App\Calendar\IcsFeed;
 use App\Calendar\ShiftCalendar;
 use App\Jobs\ReadRoster;
@@ -96,11 +98,20 @@ class ScanController extends Controller
         });
 
         $shifts = ShiftCalendar::fromDatabase()->events(Shift::whereBetween('date', [min($dates), max($dates)])->get())->count();
-        $saved = $shifts === 1 ? '1 shift saved.' : "{$shifts} shifts saved.";
+        $saved = $shifts === 1 ? '1 shift saved' : "{$shifts} shifts saved";
 
-        return redirect()->route('home')
-            ->with('status', $saved)
-            ->with('saved_scan', $scan->id);
+        if (GoogleCalendar::connected()) {
+            try {
+                GoogleCalendar::sync(min($dates), max($dates));
+
+                return redirect()->route('home')->with('status', "{$saved} and added to Google Calendar.");
+            } catch (GoogleCalendarException $e) {
+                return redirect()->route('home')->with('status', "{$saved}.")
+                    ->with('google_error', $e->getMessage())->with('saved_scan', $scan->id);
+            }
+        }
+
+        return redirect()->route('home')->with('status', "{$saved}.")->with('saved_scan', $scan->id);
     }
 
     /**

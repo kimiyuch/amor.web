@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Calendar\GoogleCalendar;
+use App\Calendar\GoogleCalendarException;
 use App\Models\Setting;
+use App\Models\Shift;
 use App\Models\ShiftCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +23,10 @@ class SettingsController extends Controller
             'feedUrl' => $feed,
             'webcalUrl' => Setting::webcalUrl(),
             'subscribed' => Setting::feedSubscribed(),
+            'googleConfigured' => GoogleCalendar::configured(),
+            'googleConnected' => GoogleCalendar::connected(),
+            'googleCalendarId' => GoogleCalendar::calendarId(),
+            'googleCalendars' => $this->googleCalendars(),
         ]);
     }
 
@@ -33,6 +40,7 @@ class SettingsController extends Controller
             'codes.*.start' => ['nullable', 'regex:/^\d{2}:\d{2}$/'],
             'codes.*.end' => ['nullable', 'regex:/^\d{2}:\d{2}$/'],
             'codes.*.skip' => 'nullable|boolean',
+            'google_calendar' => 'nullable|string|max:300',
         ]);
 
         Setting::put('person', trim((string) ($data['person'] ?? '')));
@@ -55,7 +63,48 @@ class SettingsController extends Controller
             }
         });
 
+        // Shift times or the calendar may have changed: bring the upcoming shifts up to date.
+        if (GoogleCalendar::connected()) {
+            try {
+                $this->updateGoogle($data['google_calendar'] ?? null);
+            } catch (GoogleCalendarException $e) {
+                return redirect()->route('settings')->with('status', 'Settings saved.')->withErrors(['google' => $e->getMessage()]);
+            }
+        }
+
         return redirect()->route('settings')->with('status', 'Settings saved.');
+    }
+
+    private function updateGoogle(?string $calendarId): void
+    {
+        $from = today()->toDateString();
+        $to = substr((string) Shift::max('date'), 0, 10);
+        $previous = GoogleCalendar::calendarId();
+
+        if ($calendarId && $calendarId !== $previous) {
+            $calendar = collect(GoogleCalendar::calendars())->firstWhere('id', $calendarId);
+            abort_unless($calendar, 422);
+            if ($to >= $from) {
+                GoogleCalendar::clear($previous, $from, $to);
+            }
+            GoogleCalendar::useCalendar($calendar['id'], $calendar['name']);
+        }
+        if ($to >= $from) {
+            GoogleCalendar::sync($from, $to);
+        }
+    }
+
+    /** @return list<array{id: string, name: string, primary: bool}> */
+    private function googleCalendars(): array
+    {
+        if (! GoogleCalendar::connected()) {
+            return [];
+        }
+        try {
+            return GoogleCalendar::calendars();
+        } catch (GoogleCalendarException) {
+            return [];
+        }
     }
 
     /** A new feed link; calendars subscribed to the old one stop updating. */

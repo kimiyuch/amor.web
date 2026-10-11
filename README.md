@@ -40,6 +40,7 @@ In `.env`:
 | `ANTHROPIC_API_KEY` | Used to read the photos with Claude. |
 | `AMOR_MODEL` | `claude-opus-5-5` by default. |
 | `AMOR_TIMEZONE` | Shift times are wall-clock times in this zone (`Europe/Zurich`). |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. Lets Amor write the shifts straight into a Google calendar (Settings → Connect Google Calendar). OAuth client of type *Web application*, redirect URI `https://amor.kimiyu.ch/google/callback`. |
 | `AMOR_FAKE_READER` | `true` reads a made-up roster instead of calling Claude (for UI work). |
 | `DB_QUEUE_RETRY_AFTER` | Keep at `1200`: a scan can take minutes, and must not be handed to a second worker. |
 
@@ -76,7 +77,8 @@ The server needs, once:
 2. `App\Roster\ClaudeRosterReader` sends Claude a ≈2000 px overview and a `zoom` tool that crops the original photo (`App\Roster\Photo`, Imagick). Claude zooms into the header and the person's row and answers with a JSON schema: period, row label, row box, and a code per day with an "uncertain" flag. The loop is capped at 14 turns; refusals fall back to another model server-side (`fallbacks: "default"`). The waiting page shows the progress.
 3. The photo is deleted once read; only a strip of the person's row is kept, to compare against.
 4. On the review page you correct codes, then save. Shifts in the roster's period are replaced.
-5. `/feed/<secret>.ics` (`App\Calendar\IcsFeed`) publishes all shifts. Codes become events through the shift code table in Settings: with times a timed event (ending the next day if the end is before the start), without times an all-day event, *Skip* no event. Event IDs are stable per date. The feed URL is the only thing protecting it; Settings can create a new one.
+5. With Google Calendar connected (`App\Calendar\GoogleCalendar`), saving writes the period into the chosen calendar: one event per shift with a fixed ID per date (`amor20261201`), updated on every save, deleted when the shift is gone. Changing shift times in Settings updates the upcoming events. The refresh token is stored encrypted in the database.
+6. Otherwise, the saved shifts can be added as a file (Add All on iPhone), and `/feed/<secret>.ics` (`App\Calendar\IcsFeed`) publishes all shifts. Codes become events through the shift code table in Settings: with times a timed event (ending the next day if the end is before the start), without times an all-day event, *Skip* no event. Event IDs are stable per date. The feed URL is the only thing protecting it; Settings can create a new one.
 
 ## Where things are
 

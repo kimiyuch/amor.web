@@ -7,7 +7,15 @@
             </p>
         @endif
 
-        @if ($savedScan)
+        @if ($googleError && $savedScan)
+            <section class="grid gap-3 rounded-2xl bg-peach-50 p-4 text-peach-800 dark:bg-peach-400/10 dark:text-peach-300" role="alert">
+                <p class="flex gap-2.5"><x-heroicon-s-exclamation-triangle class="h-lh w-4 shrink-0" />{{ $googleError }}</p>
+                <form method="POST" action="{{ route('google.sync', $savedScan) }}">
+                    @csrf
+                    <x-button type="submit" variant="secondary" size="sm" icon="arrow-path">Try again</x-button>
+                </form>
+            </section>
+        @elseif ($savedScan && ! $google)
             <section class="grid gap-3 rounded-2xl bg-sky-100 p-4 dark:bg-sky-300/12" aria-labelledby="add-heading">
                 <div class="grid gap-1">
                     <h2 id="add-heading" class="font-display text-lg font-semibold">Add them to your calendar</h2>

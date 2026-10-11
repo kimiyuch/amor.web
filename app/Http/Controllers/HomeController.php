@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Calendar\GoogleCalendar;
 use App\Calendar\ShiftCalendar;
 use App\Models\Scan;
 use App\Models\Setting;
@@ -25,6 +26,8 @@ class HomeController extends Controller
             'upcoming' => $upcoming,
             // Right after saving: offer the roster's shifts as a file to add to a calendar.
             'savedScan' => Scan::find(session('saved_scan')),
+            'googleError' => session('google_error'),
+            'google' => GoogleCalendar::connected(),
             'openScan' => in_array($latest?->status, ['queued', 'reading', 'read'], true) ? $latest : null,
         ]);
     }

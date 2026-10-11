@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ScanController;
@@ -12,6 +13,9 @@ Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6
 
 // Calendar apps can't sign in, so the feed is protected by the secret in its URL instead.
 Route::get('/feed/{token}.ics', FeedController::class)->name('feed');
+
+// Google's consent screen sends the browser back here; checked by the state it was given.
+Route::get('/google/callback', [GoogleController::class, 'callback'])->name('google.callback');
 
 Route::middleware('password')->group(function () {
     Route::get('/', HomeController::class)->name('home');
@@ -26,6 +30,10 @@ Route::middleware('password')->group(function () {
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/feed', [SettingsController::class, 'resetFeed'])->name('settings.feed');
+
+    Route::get('/google/connect', [GoogleController::class, 'connect'])->name('google.connect');
+    Route::post('/google/disconnect', [GoogleController::class, 'disconnect'])->name('google.disconnect');
+    Route::post('/google/sync/{scan}', [GoogleController::class, 'sync'])->name('google.sync');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });
